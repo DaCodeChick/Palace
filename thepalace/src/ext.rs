@@ -36,7 +36,7 @@ pub trait BufExt: Buf {
 }
 
 /// Extensions to `bytes::BufMut` for the Palace protocol
-pub trait BufExt: BufMut {
+pub trait BufMutExt: BufMut {
     /// Writes a Pascal string to the buffer
     fn put_pstr(&mut self, s: &[u8]) {
         self.put_u8(s.len() as u8);
