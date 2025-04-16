@@ -1,5 +1,10 @@
 const LUT: &[u8] = include_bytes!("../encode.tbl");
 
+#[derive(Debug)]
+pub enum PalaceCryptError {
+    Length(u8, usize), // threshold, got
+}
+
 /// Computes the CRC32 checksum of given input data
 pub fn crc32(input: &[u8]) -> u32 {
     let mut crc = 0xD9216290u32;
@@ -11,18 +16,13 @@ pub fn crc32(input: &[u8]) -> u32 {
     crc
 }
 
-#[derive(Debug)]
-pub enum PalaceCryptError {
-	Length(u8, usize), // threshold, got
-}
-
 /// Encrypts or decrypts the given input
 pub fn crypt(input: &[u8], decrypting: bool) -> Result<Vec<u8>, PalaceCryptError> {
-	if input.len() > 254 {
-		return PalaceCryptError::Length(254, input.len());
-	}
+    if input.len() > 254 {
+        return PalaceCryptError::Length(254, input.len());
+    }
 
-	let mut output = vec![0u8; input.len()];
+    let mut output = vec![0u8; input.len()];
     let mut rc = 0usize;
     let mut last = 0u8;
 

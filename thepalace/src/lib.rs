@@ -1,9 +1,17 @@
-pub mod algo;
-use algo::*;
+use cfg_if::cfg_if;
 
-/// A two-dimensional point on screen
-#[derive(Debug, Default)]
-pub struct Point {
-    pub v: i16,
-    pub h: i16,
+pub mod algo;
+pub use algo::*;
+
+pub mod prop;
+pub use prop::*;
+
+cfg_if! {
+    if #[cfg(feature = "net")] {
+        pub mod ext;
+        pub use ext::*;
+
+        pub mod net;
+        pub use net::*;
+    }
 }
