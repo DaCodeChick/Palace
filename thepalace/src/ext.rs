@@ -2,22 +2,22 @@ use bytes::{Buf, BufMut};
 
 /// Extensions to `bytes::Buf` for the Palace protocol
 pub trait BufExt: Buf {
-	/// Retrieves a C string from the buffer
-	fn get_cstr(self) -> Vec<u8> {
-		let mut s = vec![];
-		
-		loop {
-			let c = self.get_u8();
+    /// Retrieves a C string from the buffer
+    fn get_cstr(self) -> Vec<u8> {
+        let mut s = vec![];
 
-			if c == 0 {
-				break;
-			} else {
-				s.push(c);
-			}
-		}
+        loop {
+            let c = self.get_u8();
 
-		s
-	}
+            if c == 0 {
+                break;
+            } else {
+                s.push(c);
+            }
+        }
+
+        s
+    }
 
     /// Retrieves a Pascal string from the buffer
     fn get_pstr(self) -> Vec<u8> {
@@ -54,10 +54,10 @@ pub trait BufExt: Buf {
 
 /// Extensions to `bytes::BufMut` for the Palace protocol
 pub trait BufMutExt: BufMut {
-	/// Writes a C string to the buffer
+    /// Writes a C string to the buffer
     fn put_cstr(&mut self, s: &[u8]) {
         self.put(&s[..]);
-		self.put_u8(0);
+        self.put_u8(0);
     }
 
     /// Writes a Pascal string to the buffer
