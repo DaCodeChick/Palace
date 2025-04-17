@@ -1,5 +1,7 @@
 use bitflags::bitflags;
 
+use crate::crc32;
+
 const PROP: u32 = 0x50726F70;
 
 bitflags! {

@@ -5,9 +5,9 @@ pub enum PalaceCryptError {
     Length(u8, usize), // threshold, got
 }
 
-/// Computes the CRC32 checksum of given input data
-pub fn crc32(input: &[u8]) -> u32 {
-    let mut crc = 0xD9216290u32;
+/// Computes the CRC32 checksum of given input data and seed
+pub fn crc32(input: &[u8], seed: u32) -> u32 {
+    let mut crc = seed;
 
     input.iter().for_each(|b| {
         crc = crc.wrapping_shl(1) | (if crc & 0x80000000 == 0 { 0 } else { 1 }) ^ (*b as u32)
