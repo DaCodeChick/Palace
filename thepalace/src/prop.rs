@@ -1,116 +1,121 @@
-use bitflags::bitflags;
-use bytes::{Buf, BufMut};
 use cfg_if::cfg_if;
 
-use crate::{BufEx, BufMutEx, crc32};
+cfg_if! {
+    if #[cfg(any(feature = "prop", feature = "net"))] {
+        use bitflags::bitflags;
+        use bytes::{Buf, BufMut};
 
-const PROP: u32 = 0x50726F70;
+        use crate::{BufEx, BufMutEx, crc32};
 
-bitflags! {
-    /// Characterizes how a prop behaves. The server does not use these.
-    pub struct PropFlags: u16 {
-        const FORMAT_8BIT = 0;
-        const HEAD = 2;
-        const GHOST = 4;
-        const RARE = 8;
-        const ANIMATE = 16;
-        const BOUNCE = 32;
-        const FORMAT_20BIT = 64;
-        const FORMAT_32BIT = 256;
-        const FORMAT_S20BIT = 512;
-        const FORMAT_MASK = FORMAT_20BIT | FORMAT_32BIT | FORMAT_S20BIT;
-        const LEGACY = 0xFFC1;
-    }
-}
+        const PROP: u32 = 0x50726F70;
 
-#[derive(Debug)]
-pub struct AssetDescriptor {
-    flags: PropFlags,
-    size: u32,
-    name: Vec<u8>,
-}
-
-impl AssetDescriptor {
-    pub fn from_bytes(input: &[u8], swap: bool) -> Self {
-        let desc: Self;
-
-        if swap {
-            desc = Self {
-                flags: PropFlags::from_bits_retain(input.get_u32_ne().swap_bytes()),
-                size: input.get_u32_ne().swap_bytes(),
-                name: input.get_str31(),
-            };
-        } else {
-            desc = Self {
-                flags: PropFlags::from_bits_retain(input.get_u32_ne()),
-                size: input.get_u32_ne(),
-                name: input.get_str31(),
-            };
+        bitflags! {
+            /// Characterizes how a prop behaves. The server does not use these.
+            pub struct PropFlags: u16 {
+                const FORMAT_8BIT = 0;
+                const HEAD = 2;
+                const GHOST = 4;
+                const RARE = 8;
+                const ANIMATE = 16;
+                const BOUNCE = 32;
+                const FORMAT_20BIT = 64;
+                const FORMAT_32BIT = 256;
+                const FORMAT_S20BIT = 512;
+                const FORMAT_MASK = FORMAT_20BIT | FORMAT_32BIT | FORMAT_S20BIT;
+                const LEGACY = 0xFFC1;
+            }
         }
 
-        desc
-    }
-
-    pub fn to_bytes(&self, swap: bool) -> Vec<u8> {
-        let mut buf = vec![];
-
-        if swap {
-            buf.put_u32_ne(self.flags.bits().swap_bytes());
-            buf.put_u32_ne(self.size.swap_bytes());
-        } else {
-            buf.put_u32_ne(self.flags.bits());
-            buf.put_u32_ne(self.size);
+        #[derive(Debug)]
+        pub struct AssetDescriptor {
+            flags: PropFlags,
+            size: u32,
+            name: Vec<u8>,
         }
 
-        buf.put_str31(&self.name[..]);
+        impl AssetDescriptor {
+            pub fn from_bytes(input: &[u8], swap: bool) -> Self {
+                let desc: Self;
 
-        buf
-    }
-}
+                if swap {
+                    desc = Self {
+                        flags: PropFlags::from_bits_retain(input.get_u32_ne().swap_bytes()),
+                        size: input.get_u32_ne().swap_bytes(),
+                        name: input.get_str31(),
+                    };
+                } else {
+                    desc = Self {
+                        flags: PropFlags::from_bits_retain(input.get_u32_ne()),
+                        size: input.get_u32_ne(),
+                        name: input.get_str31(),
+                    };
+                }
 
-#[derive(Debug)]
-pub struct AssetSpec {
-    pub id: i32,
-    pub crc: u32,
-}
+                desc
+            }
 
-impl AssetSpec {
-    pub fn from_bytes(input: &[u8], swap: bool) -> Self {
-        let spec: Self;
+            pub fn to_bytes(&self, swap: bool) -> Vec<u8> {
+                let mut buf = vec![];
 
-        if swap {
-            spec = Self {
-                id: input.get_i32_ne().swap_bytes(),
-                crc: input.get_u32_ne().swap_bytes(),
-            };
-        } else {
-            spec = Self {
-                id: input.get_i32_ne(),
-                crc: input.get_u32_ne(),
-            };
+                if swap {
+                    buf.put_u32_ne(self.flags.bits().swap_bytes());
+                    buf.put_u32_ne(self.size.swap_bytes());
+                } else {
+                    buf.put_u32_ne(self.flags.bits());
+                    buf.put_u32_ne(self.size);
+                }
+
+                buf.put_str31(&self.name[..]);
+
+                buf
+            }
         }
 
-        spec
-    }
-
-    pub fn to_bytes(&self, swap: bool) -> Vec<u8> {
-        let mut buf = vec![];
-
-        if swap {
-            buf.put_i32_ne(self.id.swap_bytes());
-            buf.put_u32_ne(self.crc.swap_bytes());
-        } else {
-            buf.put_i32_ne(self.id);
-            buf.put_u32_ne(self.crc);
+        #[derive(Debug)]
+        pub struct AssetSpec {
+            pub id: i32,
+            pub crc: u32,
         }
 
-        buf
-    }
-}
+        impl AssetSpec {
+            pub fn from_bytes(input: &[u8], swap: bool) -> Self {
+                let spec: Self;
 
-#[inline]
-pub fn prop_crc32(input: &[u8]) -> u32 {
-    crc32(input, 0xD9216290)
+                if swap {
+                    spec = Self {
+                        id: input.get_i32_ne().swap_bytes(),
+                        crc: input.get_u32_ne().swap_bytes(),
+                    };
+                } else {
+                    spec = Self {
+                        id: input.get_i32_ne(),
+                        crc: input.get_u32_ne(),
+                    };
+                }
+
+                spec
+            }
+
+            pub fn to_bytes(&self, swap: bool) -> Vec<u8> {
+                let mut buf = vec![];
+
+                if swap {
+                    buf.put_i32_ne(self.id.swap_bytes());
+                    buf.put_u32_ne(self.crc.swap_bytes());
+                } else {
+                    buf.put_i32_ne(self.id);
+                    buf.put_u32_ne(self.crc);
+                }
+
+                buf
+            }
+        }
+
+        #[inline]
+        pub fn prop_crc32(input: &[u8]) -> u32 {
+            crc32(input, 0xD9216290)
+        }
+    }
 }
 
 cfg_if! {

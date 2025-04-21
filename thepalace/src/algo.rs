@@ -1,7 +1,5 @@
-use bytemuck::bytes_of;
-
 const CRC_MASK: [u32; 256] = [
-	0xEBE19B94, 0x7604DE74, 0xE3F9D651, 0x604FD612, 0xE8897C2C, 0xADC40920, 0x37ECDFB7, 0x334989ED,
+    0xEBE19B94, 0x7604DE74, 0xE3F9D651, 0x604FD612, 0xE8897C2C, 0xADC40920, 0x37ECDFB7, 0x334989ED,
     0x2834C33B, 0x8BD2FE15, 0xCBF001A7, 0xBD96B9D6, 0x315E2CE0, 0x4F167884, 0xA489B1B6, 0xA51C7A62,
     0x54622636, 0xBC016FC, 0x68DE2D22, 0x3C9D304C, 0x44FD06FB, 0xBBB3F772, 0xD637E099, 0x849AA9F9,
     0x5F240988, 0xF8373BB7, 0x30379087, 0xC7722864, 0xB0A2A643, 0xE3316071, 0x956FED7C, 0x966F937D,
@@ -47,7 +45,7 @@ pub fn crc32(input: &[u8], seed: u32) -> u32 {
     let mut crc = seed;
 
     input.iter().for_each(|b| {
-        crc = crc.wrapping_shl(1) | (if crc & 0x80000000 == 0 { 0 } else { 1 }) ^ (*b as u32)
+        crc = (crc.wrapping_shl(1) | (if crc & 0x80000000 == 0 { 0 } else { 1 })) ^ (*b as u32)
     });
 
     crc
@@ -56,7 +54,7 @@ pub fn crc32(input: &[u8], seed: u32) -> u32 {
 /// Encrypts or decrypts the given input
 pub fn crypt(input: &[u8], decrypting: bool) -> Result<Vec<u8>, PalaceCryptError> {
     if input.len() > 254 {
-        return PalaceCryptError::Length(254, input.len());
+        return Err(PalaceCryptError::Length(254, input.len()));
     }
 
     let mut output = vec![0u8; input.len()];
@@ -75,15 +73,15 @@ pub fn crypt(input: &[u8], decrypting: bool) -> Result<Vec<u8>, PalaceCryptError
 
 /// CRC32 using a precalculated table
 pub fn pseudo_crc32(counter: u32) -> u32 {
-	let mut crc = 0xA95ADE76u32;
-	let mut ctr = counter.to_be() as usize;
+    let mut crc = 0xA95ADE76u32;
+    let ctr = counter.to_be_bytes();
 
-	(0..4).iter().for_each(|i| {
-        crc = crc.wrapping_shl(1) | (if crc & 0x80000000 == 0 { 0 } else { 1 }) ^ CRC_MASK[ctr & 255];
-		ctr = ctr.wrapping_add(1);
+    ctr.iter().for_each(|c| {
+        crc = (crc.wrapping_shl(1) | (if crc & 0x80000000 == 0 { 0 } else { 1 }))
+            ^ CRC_MASK[*c as usize]
     });
 
-	crc
+    crc
 }
 
 #[cfg(test)]
@@ -93,8 +91,8 @@ mod tests {
     #[test]
     fn test_crc32() {
         let data = b"Hi there!";
-        let crc = crc32(&data[..]);
-        assert_eq!(crc, 0x42C57FF9);
+        let crc = crc32(&data[..], 0xDEADBEEF);
+        assert_eq!(crc, 0x5B7DA136);
     }
 
     #[test]
@@ -103,5 +101,11 @@ mod tests {
         let enc = crypt(&data[..], false).unwrap();
         let dec = crypt(&enc[..], true).unwrap();
         assert_eq!(&data[..], &dec[..]);
+    }
+
+    #[test]
+    fn test_pseudo_crc32() {
+        let crc = pseudo_crc32(0);
+        assert_eq!(crc, 0x5905F923);
     }
 }
