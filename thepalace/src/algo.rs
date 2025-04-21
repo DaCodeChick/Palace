@@ -80,7 +80,7 @@ pub fn pseudo_crc32(counter: u32) -> u32 {
 
 	(0..4).iter().for_each(|i| {
         crc = crc.wrapping_shl(1) | (if crc & 0x80000000 == 0 { 0 } else { 1 }) ^ CRC_MASK[ctr & 255];
-		ctr.wrapping_add(1);
+		ctr = ctr.wrapping_add(1);
     });
 
 	crc
