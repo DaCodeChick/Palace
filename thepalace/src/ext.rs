@@ -71,7 +71,7 @@ pub trait BufMutExt: BufMut {
         self.put_pstr(s);
 
         if s.len() < 31 {
-            let _ = self.put_bytes(0, 31 - s.len());
+            self.put_bytes(0, 31 - s.len());
         }
     }
 

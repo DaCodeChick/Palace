@@ -1,6 +1,5 @@
 use bitflags::bitflags;
 use bytes::{Buf, BufMut};
-use prop::PropFlags;
 
 use crate::{BufExt, BufMutExt};
 
@@ -8,6 +7,29 @@ pub mod msg;
 pub use msg::*;
 
 bitflags! {
+    pub struct DownloadCaps: u32 {
+        const ASSETS_PALACE = 1;
+        const ASSETS_FTP = 2;
+        const ASSETS_HTTP = 4;
+        const ASSETS_OTHER = 8;
+        const FILES_PALACE = 16;
+        const FILES_FTP = 32;
+        const FILES_HTTP = 64;
+        const FILES_OTHER = 128;
+        const FILES_HTTPSRVR = 256;
+        const EXTEND_PKT = 512;
+    }
+
+    pub struct Engine2DCaps: u32 {
+        const PALACE = 1;
+        const DOUBLEBYTE = 2;
+    }
+
+    pub struct Engine3DCaps: u32 {
+        const VRML1 = 1;
+        const VRML2 = 2;
+    }
+
     /// Server info request flags
     pub struct ExtendedInfoFlags: u32 {
         const AVATAR_URL = 1;
@@ -19,8 +41,18 @@ bitflags! {
         const HTTP_URL = 64;
     }
 
+    pub struct Graphics2DCaps: u32 {
+        const GIF87 = 1;
+        const GIF89A = 2;
+        const JPG = 4;
+        const TIFF = 8;
+        const TARGA = 16;
+        const BMP = 32;
+        const PCT = 64;
+    }
+
     /// User's machine attributes
-    pub struct RegFlags: u32 {
+    pub struct RegistrationFlags: u32 {
         const UNKNOWN_MACH = 0;
         const MAC68K = 1;
         const MACPPC = 2;
@@ -45,6 +77,34 @@ bitflags! {
         const NO_LPROPS = 512;
     }
 
+    pub struct ScriptEvent: u32 {
+        const SELECT = 1;
+        const LOCK = 2;
+        const UNLOCK = 4;
+        const HIDE = 8;
+        const SHOW = 16;
+        const STARTUP = 32;
+        const ALARM = 64;
+        const CUSTOM = 128;
+        const IN_CHAT = 256;
+        const PROP_CHANGE = 512;
+        const ENTER = 1024;
+        const LEAVE = 2048;
+        const OUT_CHAT = 4096;
+        const SIGN_ON = 8192;
+        const SIGN_OFF = 16384;
+        const MACRO0 = 32768;
+        const MACRO1 = 65536;
+        const MACRO2 = 0x20000;
+        const MACRO3 = 0x40000;
+        const MACRO4 = 0x80000;
+        const MACRO5 = 0x100000;
+        const MACRO6 = 0x200000;
+        const MACRO7 = 0x400000;
+        const MACRO8 = 0x800000;
+        const MACRO9 = 0x1000000;
+    }
+
     /// Server info flags
     pub struct ServerFlags: u16 {
         const DIRECTPLAY = 1;
@@ -52,6 +112,18 @@ bitflags! {
         const GUESTS_ARE_MEMBERS = 4;
         const INSTANTPALACE = 16;
         const PALACEPRESENTS = 32;
+    }
+
+    pub struct UploadCaps: u32 {
+        const ASSETS_PALACE = 1;
+        const ASSETS_FTP = 2;
+        const ASSETS_HTTP = 4;
+        const ASSETS_OTHER = 8;
+        const FILES_PALACE = 16;
+        const FILES_FTP = 32;
+        const FILES_HTTP = 64;
+        const FILES_OTHER = 128;
+        const EXTEND_PKT = 256;
     }
 
     pub struct UserFlags: u16 {
@@ -71,63 +143,6 @@ bitflags! {
     }
 }
 
-/// Prop descriptor for file transfers
-#[derive(Debug)]
-pub struct AssetDescriptor {
-    flags: PropFlags,
-    size: u32,
-    name: Vec<u8>,
-}
-
-impl AssetDescriptor {
-    pub fn from_bytes(input: &[u8]) -> Self {
-        let flags = PropFlags::from_bits_retain(input.get_u32_ne());
-        let size = input.get_u32_ne();
-        let name = input.get_str31();
-
-        Self {
-            flags: flags,
-            size: size,
-            name: name,
-        }
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
-
-        buf.put_u32_ne(self.flags.bits());
-        buf.put_u32_ne(self.size);
-        buf.put_str31(&self.name[..]);
-
-        buf
-    }
-}
-
-/// Prop specification for network
-#[derive(Debug)]
-pub struct AssetSpec {
-    pub id: u32,
-    pub crc: u32,
-}
-
-impl AssetSpec {
-    pub fn from_bytes(input: &[u8]) -> Self {
-        Self {
-            id: input.get_u32_ne(),
-            crc: input.get_u32_ne(),
-        }
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
-
-        buf.put_u32_ne(self.id);
-        buf.put_u32_ne(self.crc);
-
-        buf
-    }
-}
-
 /// Draw data
 #[derive(Debug)]
 pub struct Draw {
@@ -136,6 +151,7 @@ pub struct Draw {
 }
 
 /// Draw command
+#[derive(Debug)]
 #[repr(u16)]
 pub enum DrawCmd {
     Path = 0,
@@ -147,6 +163,7 @@ pub enum DrawCmd {
 }
 
 /// Extended info ID code
+#[derive(Debug)]
 #[repr(u32)]
 pub enum ExtendedInfoID {
     AuthNeeded = 0x41555448,
@@ -169,37 +186,50 @@ pub struct FileDescriptor {
     name: Vec<u8>,
 }
 
+#[derive(Debug)]
+#[repr(u16)]
+pub enum HotspotState {
+    Unlock = 0,
+    Lock,
+}
+
+#[derive(Debug)]
+#[repr(u16)]
+pub enum HotspotType {
+    Normal = 0,
+    Door,
+    ShutableDoor,
+    LockableDoor,
+    Bolt,
+    NavArea,
+}
+
+#[derive(Debug)]
+pub struct LProp {
+    spec: AssetSpec,
+    flags: PropFlags,
+    refnum: i32,
+    loc: Point,
+}
+
+#[derive(Debug)]
+#[repr(u32)]
+pub enum NavError {
+    Internal = 0,
+    RoomUnknown,
+    RoomFull,
+    RoomClosed,
+    CantAuthor,
+    PalaceFull,
+}
+
+#[derive(Debug)]
 #[repr(u8)]
 pub enum Platform {
     Mac = 0,
     Win95,
     WinNT,
     Unix,
-}
-
-/// A two-dimensional point on screen
-#[derive(Debug, Default)]
-pub struct Point {
-    pub v: i16,
-    pub h: i16,
-}
-
-impl Point {
-    pub fn from_bytes(input: &[u8]) -> Self {
-        Self {
-            v: input.get_i16_ne(),
-            h: input.get_i16_ne(),
-        }
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
-
-        buf.put_i16_ne(self.v);
-        buf.put_i16_ne(self.h);
-
-        buf
-    }
 }
 
 /// Sent upon user login
@@ -218,4 +248,10 @@ pub struct Registration {
     room: u16,
     reserved: [u8; 6],
     req_protocol_ver: u32,
+}
+
+#[derive(Debug)]
+pub struct State {
+    pic_id: u16,
+    pic_loc: Point,
 }
