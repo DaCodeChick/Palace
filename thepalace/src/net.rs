@@ -131,7 +131,9 @@ bitflags! {
         const GOD = 2;
         const KILL = 4;
         const GUEST = 8;
+		#[deprecated(note = "Redundant with KILL, shouldn't be used")]
         const BANISHED = 16;
+		#[deprecated(note = "Historical artifact, shouldn't be used")]
         const PENALIZED = 32;
         const ERROR = 64;
         const GAG = 128;
