@@ -7,8 +7,8 @@ pub mod msg;
 pub use msg::*;
 
 bitflags! {
-	/// Flags for the download capabilities
-	#[derive(Debug, Clone, Copy)]
+    /// Flags for the download capabilities
+    #[derive(Debug, Clone, Copy)]
     pub struct DownloadCaps: u32 {
         const ASSETS_PALACE = 1; /// Assets from Palace
         const ASSETS_FTP = 2; /// Assets from FTP
@@ -22,22 +22,22 @@ bitflags! {
         const EXTEND_PKT = 512; /// Extended packet
     }
 
-	/// 2D engine capabilities
-	#[derive(Debug, Clone, Copy)]
+    /// 2D engine capabilities
+    #[derive(Debug, Clone, Copy)]
     pub struct Engine2DCaps: u32 {
         const PALACE = 1; /// Palace
         const DOUBLEBYTE = 2; /// Double byte
     }
 
-	/// Flags for the 3D engine capabilities
-	#[derive(Debug, Clone, Copy)]
+    /// Flags for the 3D engine capabilities
+    #[derive(Debug, Clone, Copy)]
     pub struct Engine3DCaps: u32 {
         const VRML1 = 1; /// VRML1
         const VRML2 = 2; /// VRML2
     }
 
-	/// Flags for the extended info packet
-	#[derive(Debug, Clone, Copy)]
+    /// Flags for the extended info packet
+    #[derive(Debug, Clone, Copy)]
     pub struct ExtendedInfoFlags: u32 {
         const AVATAR_URL = 1; /// Avatar URL
         const SERVER_VERSION = 2; /// Server version
@@ -48,8 +48,8 @@ bitflags! {
         const HTTP_URL = 64; /// HTTP URL
     }
 
-	/// Flags for the graphics 2D capabilities
-	#[derive(Debug, Clone, Copy)]
+    /// Flags for the graphics 2D capabilities
+    #[derive(Debug, Clone, Copy)]
     pub struct Graphics2DCaps: u32 {
         const GIF87 = 1;
         const GIF89A = 2;
@@ -60,9 +60,9 @@ bitflags! {
         const PCT = 64;
     }
 
-	#[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy)]
     pub struct RegistrationFlags: u32 {
-        const UNKNOWN_MACH = 0; /// Unknown machine	
+        const UNKNOWN_MACH = 0; /// Unknown machine
         const MAC68K = 1; /// Mac 68K
         const MACPPC = 2; /// Mac PPC
         const WIN16 = 3; /// Windows 16-bit
@@ -73,7 +73,7 @@ bitflags! {
     }
 
     /// Flags for rooms
-	#[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy)]
     pub struct RoomFlags: u16 {
         const AUTHOR_LOCKED = 1; /// Author locked
         const PRIVATE = 2; /// Private
@@ -87,8 +87,8 @@ bitflags! {
         const NO_LPROPS = 512; /// No loose props
     }
 
-	/// Script events
-	#[derive(Debug, Clone, Copy)]
+    /// Script events
+    #[derive(Debug, Clone, Copy)]
     pub struct ScriptEvent: u32 {
         const SELECT = 1;
         const LOCK = 2;
@@ -118,7 +118,7 @@ bitflags! {
     }
 
     /// Flags for the server
-	#[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy)]
     pub struct ServerFlags: u16 {
         const DIRECTPLAY = 1; /// DirectPlay
         const CLOSED = 2; /// Closed
@@ -127,8 +127,8 @@ bitflags! {
         const PALACEPRESENTS = 32; /// Palace Presents
     }
 
-	/// Upload capabilities
-	#[derive(Debug, Clone, Copy)]
+    /// Upload capabilities
+    #[derive(Debug, Clone, Copy)]
     pub struct UploadCaps: u32 {
         const ASSETS_PALACE = 1; /// Assets from Palace
         const ASSETS_FTP = 2; /// Assets from FTP
@@ -141,8 +141,8 @@ bitflags! {
         const EXTEND_PKT = 256; /// Extended packet
     }
 
-	/// Flags for the user
-	#[derive(Debug, Clone, Copy)]
+    /// Flags for the user
+    #[derive(Debug, Clone, Copy)]
     pub struct UserFlags: u16 {
         const SUPERUSER = 1;
         const GOD = 2;
@@ -161,7 +161,6 @@ bitflags! {
         const PROP_GAG = 4096; /// Prop gag
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Draw {
@@ -196,7 +195,8 @@ pub enum ExtendedInfoID {
     Flags = 0x464C4147,
     HttpURL = 0x4855524C,
     Name = 0x4E414D45,
-    NumUsers = 0x4E555352, /// Number of users
+    NumUsers = 0x4E555352,
+    /// Number of users
     Password = 0x50415353,
     Type = 0x54595045,
     Unknown = 0x554E4B4E,
@@ -224,12 +224,12 @@ pub enum HotspotState {
 #[derive(Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum HotspotType {
-    Normal = 0, /// Normal hotspot
-    Door, /// Door hotspot
-    ShutableDoor, /// Shutable door hotspot
-    LockableDoor, /// Lockable door hotspot
-    Bolt, /// Bolt hotspot
-    NavArea, /// Nav area hotspot
+    Normal = 0,
+    Door,
+    ShutableDoor,
+    LockableDoor,
+    Bolt,
+    NavArea,
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -11,7 +11,7 @@ cfg_if! {
 
         bitflags! {
             /// Prop flags
-			#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct PropFlags: u16 {
                 const FORMAT_8BIT = 0;
                 const HEAD = 2;
@@ -112,7 +112,7 @@ cfg_if! {
             }
         }
 
-		/// Calculate CRC32
+        /// Calculate CRC32
         #[inline]
         pub fn prop_crc32(input: &[u8]) -> u32 {
             crc32(input, 0xD9216290)
@@ -131,7 +131,7 @@ cfg_if! {
         const DITHER_20BIT: f64 = 4.0476190476190474;
         const DITHER_S20BIT: f64 = 8.225806451612904;
 
-		/// Prop structure
+        /// Prop structure
         #[derive(Debug, Clone)]
         pub struct Prop {
             spec: AssetSpec,
