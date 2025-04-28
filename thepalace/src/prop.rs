@@ -7,10 +7,11 @@ cfg_if! {
 
         use crate::{BufEx, BufMutEx, crc32};
 
-        const PROP: u32 = 0x50726F70;
+        const PROP: u32 = 0x50726F70; /// "Prop"
 
         bitflags! {
-            /// Characterizes how a prop behaves. The server does not use these.
+            /// Prop flags
+			#[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct PropFlags: u16 {
                 const FORMAT_8BIT = 0;
                 const HEAD = 2;
@@ -26,7 +27,7 @@ cfg_if! {
             }
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, Clone, Copy)]
         pub struct AssetDescriptor {
             flags: PropFlags,
             size: u32,
@@ -111,6 +112,7 @@ cfg_if! {
             }
         }
 
+		/// Calculate CRC32
         #[inline]
         pub fn prop_crc32(input: &[u8]) -> u32 {
             crc32(input, 0xD9216290)
@@ -129,7 +131,8 @@ cfg_if! {
         const DITHER_20BIT: f64 = 4.0476190476190474;
         const DITHER_S20BIT: f64 = 8.225806451612904;
 
-        #[derive(Debug)]
+		/// Prop structure
+        #[derive(Debug, Clone)]
         pub struct Prop {
             spec: AssetSpec,
             desc: AssetDescriptor,

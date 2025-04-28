@@ -7,76 +7,88 @@ pub mod msg;
 pub use msg::*;
 
 bitflags! {
+	/// Flags for the download capabilities
+	#[derive(Debug, Clone, Copy)]
     pub struct DownloadCaps: u32 {
-        const ASSETS_PALACE = 1;
-        const ASSETS_FTP = 2;
-        const ASSETS_HTTP = 4;
-        const ASSETS_OTHER = 8;
-        const FILES_PALACE = 16;
-        const FILES_FTP = 32;
-        const FILES_HTTP = 64;
-        const FILES_OTHER = 128;
+        const ASSETS_PALACE = 1; /// Assets from Palace
+        const ASSETS_FTP = 2; /// Assets from FTP
+        const ASSETS_HTTP = 4; /// Assets from HTTP
+        const ASSETS_OTHER = 8; /// Assets from other
+        const FILES_PALACE = 16; /// Files from Palace
+        const FILES_FTP = 32; /// Files from FTP
+        const FILES_HTTP = 64; /// Files from HTTP
+        const FILES_OTHER = 128; /// Files from other
         const FILES_HTTPSRVR = 256;
-        const EXTEND_PKT = 512;
+        const EXTEND_PKT = 512; /// Extended packet
     }
 
+	/// 2D engine capabilities
+	#[derive(Debug, Clone, Copy)]
     pub struct Engine2DCaps: u32 {
-        const PALACE = 1;
-        const DOUBLEBYTE = 2;
+        const PALACE = 1; /// Palace
+        const DOUBLEBYTE = 2; /// Double byte
     }
 
+	/// Flags for the 3D engine capabilities
+	#[derive(Debug, Clone, Copy)]
     pub struct Engine3DCaps: u32 {
-        const VRML1 = 1;
-        const VRML2 = 2;
+        const VRML1 = 1; /// VRML1
+        const VRML2 = 2; /// VRML2
     }
 
-    /// Server info request flags
+	/// Flags for the extended info packet
+	#[derive(Debug, Clone, Copy)]
     pub struct ExtendedInfoFlags: u32 {
-        const AVATAR_URL = 1;
-        const SERVER_VERSION = 2;
-        const SERVER_TYPE = 4;
-        const SERVER_FLAGS = 8;
-        const NUM_USERS = 16;
-        const SERVER_NAME = 32;
-        const HTTP_URL = 64;
+        const AVATAR_URL = 1; /// Avatar URL
+        const SERVER_VERSION = 2; /// Server version
+        const SERVER_TYPE = 4; /// Server type
+        const SERVER_FLAGS = 8; /// Server flags
+        const NUM_USERS = 16; /// Number of users
+        const SERVER_NAME = 32; /// Server name
+        const HTTP_URL = 64; /// HTTP URL
     }
 
+	/// Flags for the graphics 2D capabilities
+	#[derive(Debug, Clone, Copy)]
     pub struct Graphics2DCaps: u32 {
         const GIF87 = 1;
         const GIF89A = 2;
         const JPG = 4;
         const TIFF = 8;
         const TARGA = 16;
-        const BMP = 32;
+        const BMP = 32; /// Bitmap
         const PCT = 64;
     }
 
-    /// User's machine attributes
+	#[derive(Debug, Clone, Copy)]
     pub struct RegistrationFlags: u32 {
-        const UNKNOWN_MACH = 0;
-        const MAC68K = 1;
-        const MACPPC = 2;
-        const WIN16 = 3;
-        const WIN32 = 4;
-        const JAVA = 5;
-        const OS_MASK = 15;
-        const AUTH = 0x80000000;
+        const UNKNOWN_MACH = 0; /// Unknown machine	
+        const MAC68K = 1; /// Mac 68K
+        const MACPPC = 2; /// Mac PPC
+        const WIN16 = 3; /// Windows 16-bit
+        const WIN32 = 4; /// Windows 32-bit
+        const JAVA = 5; /// Java
+        const OS_MASK = 15; /// OS mask
+        const AUTH = 0x80000000; /// Authenticated
     }
 
-    /// Room flags
+    /// Flags for rooms
+	#[derive(Debug, Clone, Copy)]
     pub struct RoomFlags: u16 {
-        const AUTHOR_LOCKED = 1;
-        const PRIVATE = 2;
-        const NO_PAINT = 4;
-        const CLOSED = 8;
-        const NO_SCRIPT = 16;
-        const HIDDEN = 32;
-        const NO_GUESTS = 64;
-        const WIZARDS_ONLY = 128;
-        const DROP_ZONE = 256;
-        const NO_LPROPS = 512;
+        const AUTHOR_LOCKED = 1; /// Author locked
+        const PRIVATE = 2; /// Private
+        const NO_PAINT = 4; /// No paint
+        const CLOSED = 8; /// Closed
+        const NO_SCRIPT = 16; /// No scripts
+        const HIDDEN = 32; /// Hidden
+        const NO_GUESTS = 64; /// No guests
+        const WIZARDS_ONLY = 128; /// Wizards only
+        const DROP_ZONE = 256; /// Drop zone
+        const NO_LPROPS = 512; /// No loose props
     }
 
+	/// Script events
+	#[derive(Debug, Clone, Copy)]
     pub struct ScriptEvent: u32 {
         const SELECT = 1;
         const LOCK = 2;
@@ -105,27 +117,32 @@ bitflags! {
         const MACRO9 = 0x1000000;
     }
 
-    /// Server info flags
+    /// Flags for the server
+	#[derive(Debug, Clone, Copy)]
     pub struct ServerFlags: u16 {
-        const DIRECTPLAY = 1;
-        const CLOSED = 2;
-        const GUESTS_ARE_MEMBERS = 4;
-        const INSTANTPALACE = 16;
-        const PALACEPRESENTS = 32;
+        const DIRECTPLAY = 1; /// DirectPlay
+        const CLOSED = 2; /// Closed
+        const GUESTS_ARE_MEMBERS = 4; /// Guests are members
+        const INSTANTPALACE = 16; /// Instant Palace
+        const PALACEPRESENTS = 32; /// Palace Presents
     }
 
+	/// Upload capabilities
+	#[derive(Debug, Clone, Copy)]
     pub struct UploadCaps: u32 {
-        const ASSETS_PALACE = 1;
-        const ASSETS_FTP = 2;
-        const ASSETS_HTTP = 4;
-        const ASSETS_OTHER = 8;
-        const FILES_PALACE = 16;
-        const FILES_FTP = 32;
-        const FILES_HTTP = 64;
-        const FILES_OTHER = 128;
-        const EXTEND_PKT = 256;
+        const ASSETS_PALACE = 1; /// Assets from Palace
+        const ASSETS_FTP = 2; /// Assets from FTP
+        const ASSETS_HTTP = 4; /// Assets from HTTP
+        const ASSETS_OTHER = 8; /// Assets from other
+        const FILES_PALACE = 16; /// Files from Palace
+        const FILES_FTP = 32; /// Files from FTP
+        const FILES_HTTP = 64; /// Files from HTTP
+        const FILES_OTHER = 128; /// Files from other
+        const EXTEND_PKT = 256; /// Extended packet
     }
 
+	/// Flags for the user
+	#[derive(Debug, Clone, Copy)]
     pub struct UserFlags: u16 {
         const SUPERUSER = 1;
         const GOD = 2;
@@ -140,20 +157,23 @@ bitflags! {
         const PIN = 256;
         const HIDE = 512;
         const REJECT_ESP = 1024;
-        const REJECT_WHISPER = 2048;
-        const PROP_GAG = 4096;
+        const REJECT_WHISPER = 2048; /// Reject whispers
+        const PROP_GAG = 4096; /// Prop gag
     }
 }
 
-/// Draw data
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 pub struct Draw {
     cmd: DrawCmd,
     data: Vec<u8>,
 }
 
-/// Draw command
-#[derive(Debug)]
+/// This is used to identify the type of drawing command
+/// that is being sent in the draw packet.
+/// The command is a 16-bit unsigned integer, and the
+/// values are defined in the Palace protocol documentation.
+#[derive(Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum DrawCmd {
     Path = 0,
@@ -164,8 +184,11 @@ pub enum DrawCmd {
     Ellipse,
 }
 
-/// Extended info ID code
-#[derive(Debug)]
+/// This is used to identify the type of extended info
+/// that is being sent in the extended info packet.
+/// The ID is a 32-bit unsigned integer, and the values
+/// are defined in the Palace protocol documentation.
+#[derive(Debug, Clone, Copy)]
 #[repr(u32)]
 pub enum ExtendedInfoID {
     AuthNeeded = 0x41555448,
@@ -173,40 +196,43 @@ pub enum ExtendedInfoID {
     Flags = 0x464C4147,
     HttpURL = 0x4855524C,
     Name = 0x4E414D45,
-    NumUsers = 0x4E555352,
+    NumUsers = 0x4E555352, /// Number of users
     Password = 0x50415353,
     Type = 0x54595045,
     Unknown = 0x554E4B4E,
     Version = 0x56455253,
 }
 
-/// File descriptor for transfers
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileDescriptor {
     num_blocks: u16,
     size: u32,
     name: Vec<u8>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum HotspotState {
     Unlock = 0,
     Lock,
 }
 
-#[derive(Debug)]
+/// This is used to identify the type of hotspot
+/// that is being sent in the hotspot packet.
+/// The type is a 16-bit unsigned integer, and the
+/// values are defined in the Palace protocol documentation.
+#[derive(Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum HotspotType {
-    Normal = 0,
-    Door,
-    ShutableDoor,
-    LockableDoor,
-    Bolt,
-    NavArea,
+    Normal = 0, /// Normal hotspot
+    Door, /// Door hotspot
+    ShutableDoor, /// Shutable door hotspot
+    LockableDoor, /// Lockable door hotspot
+    Bolt, /// Bolt hotspot
+    NavArea, /// Nav area hotspot
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct LProp {
     spec: AssetSpec,
     flags: PropFlags,
@@ -214,7 +240,11 @@ pub struct LProp {
     loc: Point,
 }
 
-#[derive(Debug)]
+/// This is used to identify the type of navigation error
+/// that is being sent in the navigation error packet.
+/// The error is a 32-bit unsigned integer, and the values
+/// are defined in the Palace protocol documentation.
+#[derive(Debug, Clone, Copy)]
 #[repr(u32)]
 pub enum NavError {
     Internal = 0,
@@ -225,7 +255,7 @@ pub enum NavError {
     PalaceFull,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum Platform {
     Mac = 0,
@@ -234,8 +264,7 @@ pub enum Platform {
     Unix,
 }
 
-/// Sent upon user login
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Registration {
     crc: u32,
     counter: u32,
@@ -252,7 +281,7 @@ pub struct Registration {
     req_protocol_ver: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct State {
     pic_id: u16,
     pic_loc: Point,

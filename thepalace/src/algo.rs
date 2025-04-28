@@ -35,12 +35,12 @@ const CRC_MASK: [u32; 256] = [
 
 const LUT: &[u8] = include_bytes!("../encode.tbl");
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum PalaceCryptError {
     Length(u8, usize), // threshold, got
 }
 
-/// Computes the CRC32 checksum of given input data and seed
+//// Calculates the CRC32 checksum of the input data
 pub fn crc32(input: &[u8], seed: u32) -> u32 {
     let mut crc = seed;
 
@@ -51,7 +51,7 @@ pub fn crc32(input: &[u8], seed: u32) -> u32 {
     crc
 }
 
-/// Encrypts or decrypts the given input
+/// Encrypts or decrypts the input data using a simple XOR cipher
 pub fn crypt(input: &[u8], decrypting: bool) -> Result<Vec<u8>, PalaceCryptError> {
     if input.len() > 254 {
         return Err(PalaceCryptError::Length(254, input.len()));
@@ -71,7 +71,7 @@ pub fn crypt(input: &[u8], decrypting: bool) -> Result<Vec<u8>, PalaceCryptError
     Ok(output)
 }
 
-/// CRC32 using a precalculated table
+/// Generates a pseudo CRC32 checksum based on a counter value
 pub fn pseudo_crc32(counter: u32) -> u32 {
     let mut crc = 0xA95ADE76u32;
     let ctr = counter.to_be_bytes();

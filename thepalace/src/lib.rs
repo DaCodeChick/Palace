@@ -16,8 +16,8 @@ cfg_if! {
     }
 }
 
-/// A two-dimensional point on screen
-#[derive(Debug, Default)]
+/// A point in the 2D space
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Point {
     pub v: i16,
     pub h: i16,

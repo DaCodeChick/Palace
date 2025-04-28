@@ -2,8 +2,7 @@ use bytes::{Buf, BufMut};
 
 use crate::{AssetDescriptor, AssetSpec};
 
-/// When the server sends an asset to the client
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AssetSend {
     spec: AssetSpec,
     block_offset: u32,
@@ -13,15 +12,13 @@ pub struct AssetSend {
     data: Vec<u8>,
 }
 
-/// Plugin message to client
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlowThruToClient {
     tag: u32,
     data: Vec<u8>,
 }
 
-/// Plugin message to the server
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlowThruToServer {
     num_users: u32,
     tag: u32,
@@ -29,15 +26,14 @@ pub struct BlowThruToServer {
     data: Vec<u8>,
 }
 
-/// Door lock/unlock
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DoorLock {
     room: u16,
     door: u16,
 }
 
-/// Message to be passed between client and server
-#[derive(Debug)]
+/// Represents a message sent to the client
+#[derive(Debug, Clone)]
 pub struct Message {
     pub event: u32,
     pub relay: i32,
