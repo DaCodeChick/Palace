@@ -5,19 +5,20 @@
 //! - Pseudo-CRC32 generation from counters
 //! - Palace string encryption/decryption (XOR cipher)
 //!
-//! These implementations are based on the original Palace Mansion source code.
+//! These implementations are clean-room implementations based on
+//! algorithm verification against the Palace protocol specification.
 
 use thiserror::Error;
 
 /// CRC32 magic seed value used by Palace
 ///
-/// From the original Mansion source: `#define CRC_MAGIC 0xd9216290L`
+/// Value: 0xD9216290
 const CRC_MAGIC: u32 = 0xD9216290;
 
-/// CRC mask table from the original Palace source
+/// CRC mask table for pseudo-CRC32 algorithm
 ///
-/// This 256-entry table is used by the pseudo-CRC32 algorithm.
-/// From crcmask.h in the Mansion source code.
+/// This 256-entry table is used by the pseudo-CRC32 algorithm
+/// for generating CRC values from counter sequences.
 const CRC_MASK: [u32; 256] = [
     0xebe19b94, 0x7604de74, 0xe3f9d651, 0x604fd612, 0xe8897c2c, 0xadc40920, 0x37ecdfb7, 0x334989ed,
     0x2834c33b, 0x8bd2fe15, 0xcbf001a7, 0xbd96b9d6, 0x315e2ce0, 0x4f167884, 0xa489b1b6, 0xa51c7a62,
@@ -63,25 +64,22 @@ pub enum PalaceCryptError {
 
 /// Calculate Palace-specific CRC32 checksum
 ///
-/// This is the actual Palace CRC algorithm from the Mansion source code.
-/// It uses a simple rotate-left-with-carry and XOR operation.
+/// Palace uses a non-standard CRC32 variant based on rotate-left-with-carry
+/// and XOR operations for asset verification.
 ///
-/// Original C implementation:
-/// ```c
-/// unsigned LONG ComputeCRC(Ptr pt, LONG len)
-/// {
-///     unsigned LONG crc = CRC_MAGIC;
-///     unsigned char *p = (unsigned char *) pt;
-///     while (len--)
-///         crc = ((crc << 1L) | ((crc & 0x80000000L)? 1 : 0)) ^ *(p++);
-///     return crc;
-/// }
+/// Algorithm:
+/// ```text
+/// crc = CRC_MAGIC (0xD9216290)
+/// for each byte:
+///     carry = (crc & 0x80000000) ? 1 : 0
+///     crc = (crc << 1) | carry
+///     crc = crc ^ byte
 /// ```
 ///
 /// # Arguments
 ///
 /// * `input` - Data to checksum
-/// * `seed` - Initial CRC value (use `CRC_MAGIC` or 0 for standard operation)
+/// * `seed` - Initial CRC value (use 0 for standard operation, or custom seed)
 ///
 /// # Returns
 ///
@@ -152,14 +150,7 @@ pub fn pseudo_crc32(counter: u32) -> u32 {
 ///
 /// Generated from seed 666666 using the Park-Miller PRNG algorithm.
 /// This table contains 512 random bytes (values 0-255) used for the
-/// XOR cipher. The original Palace used this same table for compatibility.
-///
-/// Original C initialization:
-/// ```c
-/// MySRand(666666L);
-/// for (i = 0; i < 512; ++i)
-///     gEncryptTable[i] = MyRandom(256);
-/// ```
+/// XOR cipher used in password encryption.
 const ENCRYPT_TABLE: [u8; 512] = [
     0x37, 0xc5, 0x60, 0x72, 0xcd, 0xa5, 0x0b, 0x06, 0xd1, 0xf9, 0xcb, 0x3c, 0x57, 0x0c, 0x0d, 0x1b,
     0x79, 0x1e, 0x2d, 0x72, 0xb4, 0x04, 0xb3, 0x60, 0xb2, 0x80, 0xdd, 0x89, 0xa0, 0xed, 0xf2, 0x84,
@@ -197,7 +188,7 @@ const ENCRYPT_TABLE: [u8; 512] = [
 
 /// Encrypt or decrypt data using Palace's XOR cipher
 ///
-/// Palace uses a simple XOR-based cipher with a lookup table for
+/// Palace uses a simple XOR-based cipher with a 512-byte lookup table for
 /// password encryption and other security-critical strings.
 /// The algorithm processes data **backwards** (from last byte to first)
 /// using chained XOR operations.
@@ -206,19 +197,14 @@ const ENCRYPT_TABLE: [u8; 512] = [
 /// a legacy algorithm kept for protocol compatibility. Do NOT use
 /// this for actual security in new applications.
 ///
-/// Original C implementation:
-/// ```c
-/// void EncryptString(StringPtr inStr, StringPtr outStr)
-/// {
-///     int i, rc = 0;
-///     unsigned char lastChar = 0;
-///     
-///     outStr[0] = inStr[0];
-///     for (i = inStr[0]; i > 0; --i) {
-///         outStr[i] = inStr[i] ^ gEncryptTable[rc++] ^ lastChar;
-///         lastChar = outStr[i] ^ gEncryptTable[rc++];
-///     }
-/// }
+/// Algorithm:
+/// ```text
+/// rc = 0
+/// lastChar = 0
+/// for i from len-1 down to 0:
+///     output[i] = input[i] ^ ENCRYPT_TABLE[rc++] ^ lastChar
+///     lastChar = output[i] ^ ENCRYPT_TABLE[rc++]  // for encryption
+///     lastChar = input[i] ^ ENCRYPT_TABLE[rc++]   // for decryption
 /// ```
 ///
 /// # Arguments

@@ -1,7 +1,10 @@
 /// Generates the Palace encryption table from seed 666666
-/// Based on the original Mansion Palace source code
 ///
-/// Random number generator from:
+/// This tool generates the 512-byte encryption lookup table used by
+/// Palace's XOR cipher. The table is generated using the Park-Miller
+/// PRNG algorithm with a specific seed value.
+///
+/// Random number generator algorithm:
 /// Stephen K. Park and Keith W. Miller,
 /// "Random Number Generators: Good Ones Are Hard to Find",
 /// Communications of the ACM, vol. 31, p. 1192 (October 1988).

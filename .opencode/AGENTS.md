@@ -1,14 +1,38 @@
 # Ghidra MCP Bridge Workflow
 
+## ⚠️ IMPORTANT: Clean Room Policy
+
+**This project uses a strict clean-room implementation approach. Original Palace source code has been reviewed for algorithm verification ONLY and must NOT be distributed or directly referenced in our codebase.**
+
+### What We've Extracted (Clean Room):
+
+✅ **Algorithm Verification Completed (DO NOT reference original source again):**
+- CRC32 algorithm: Rotate-left-with-carry + XOR (verified and implemented)
+- Encryption: XOR cipher with 512-byte lookup table from seed 666666 (verified and implemented)
+- Random Number Generator: Park-Miller PRNG (verified and implemented)
+- CRC mask table: 256 u32 entries (extracted and implemented)
+
+**All references to the original Mansion source code (`/home/admin/Downloads/mansionsrc/`) should now be avoided. The algorithms have been independently implemented in `lib/thepalace/src/algo.rs`.**
+
+### Going Forward:
+
+For any remaining protocol questions, use ONLY:
+1. **Protocol PDF** (`/home/admin/Downloads/PalaceProtocolRef.pdf`) - primary reference
+2. **Ghidra MCP analysis** - for binary behavior analysis (if needed)
+3. **Network packet capture** - testing against original clients
+4. **Independent implementation** - based on protocol spec, not decompiled code
+
 ## Purpose
 
-Use Ghidra MCP server to decompile and analyze original Palace server and client binaries to extract:
+Use Ghidra MCP server to decompile and analyze original Palace server and client binaries to understand:
 - Protocol implementation details
 - Iptscrae VM execution logic
 - Undocumented message types or behaviors
 - Prop format parsing algorithms
 - Script security implementations
 - Edge cases and quirks
+
+**CRITICAL: Analyze for understanding, implement independently.**
 
 ## Setup
 
