@@ -20,7 +20,7 @@ pub mod user;
 pub use auth::*;
 pub use chat::*;
 pub use flags::*;
-pub use message::Message;
+pub use message::{Message, MessagePayload};
 pub use message_id::MessageId;
 pub use room::*;
 pub use user::*;

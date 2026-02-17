@@ -12,6 +12,7 @@ use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::flags::{
     AuxFlags, DownloadCaps, Engine2DCaps, Engine3DCaps, Graphics2DCaps, UploadCaps,
 };
+use crate::messages::{MessageId, MessagePayload};
 use crate::RoomID;
 
 /// MSG_TIYID - First message sent to detect endianness
@@ -34,6 +35,20 @@ impl TiyidMsg {
 impl Default for TiyidMsg {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl MessagePayload for TiyidMsg {
+    fn message_id() -> MessageId {
+        MessageId::Tiyid
+    }
+
+    fn from_bytes(_buf: &mut impl Buf) -> std::io::Result<Self> {
+        Ok(Self)
+    }
+
+    fn to_bytes(&self, _buf: &mut impl BufMut) {
+        // Empty payload
     }
 }
 
@@ -250,6 +265,21 @@ impl LogonMsg {
     }
 }
 
+impl MessagePayload for LogonMsg {
+    fn message_id() -> MessageId {
+        MessageId::Regi
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        let rec = AuxRegistrationRec::from_bytes(buf)?;
+        Ok(Self { rec })
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.rec.to_bytes(buf);
+    }
+}
+
 /// MSG_ALTLOGONREPLY - Alternative logon reply from server
 ///
 /// Sent by server in response to MSG_LOGON when using
@@ -274,6 +304,21 @@ impl AltLogonReplyMsg {
 
     /// Write to bytes
     pub fn to_bytes<B: BufMut>(&self, buf: &mut B) {
+        self.rec.to_bytes(buf);
+    }
+}
+
+impl MessagePayload for AltLogonReplyMsg {
+    fn message_id() -> MessageId {
+        MessageId::AltLogonReply
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        let rec = AuxRegistrationRec::from_bytes(buf)?;
+        Ok(Self { rec })
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
         self.rec.to_bytes(buf);
     }
 }
@@ -350,5 +395,27 @@ mod tests {
         let msg2 = LogonMsg::from_bytes(&mut read_buf).unwrap();
 
         assert_eq!(msg, msg2);
+    }
+
+    #[test]
+    fn test_message_payload_trait() {
+        use crate::messages::MessagePayload;
+
+        // Test TiyidMsg
+        let tiyid = TiyidMsg::new();
+        let message = tiyid.to_message_default();
+        assert_eq!(message.msg_id, MessageId::Tiyid);
+        assert_eq!(message.payload.len(), 0);
+
+        // Test LogonMsg
+        let logon = LogonMsg::guest("Alice", 5);
+        let message = logon.to_message(0);
+        assert_eq!(message.msg_id, MessageId::Regi);
+        assert_eq!(message.payload.len(), AuxRegistrationRec::SIZE);
+
+        // Parse it back
+        let parsed = message.parse_payload::<LogonMsg>().unwrap();
+        assert_eq!(parsed.rec.user_name, "Alice");
+        assert_eq!(parsed.rec.desired_room, 5);
     }
 }

@@ -12,6 +12,7 @@
 
 use bytes::{Buf, BufMut};
 
+use crate::messages::{MessageId, MessagePayload};
 use crate::RoomID;
 
 /// MSG_ROOMGOTO - Client requests to move to a different room
@@ -45,6 +46,20 @@ impl RoomGotoMsg {
     }
 }
 
+impl MessagePayload for RoomGotoMsg {
+    fn message_id() -> MessageId {
+        MessageId::RoomGoto
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
+    }
+}
+
 /// MSG_ROOMDESCEND - Marks end of room description sequence
 ///
 /// Sent from server to client to indicate that all room description
@@ -60,6 +75,20 @@ impl RoomDescEndMsg {
     }
 
     pub fn to_bytes(&self, _buf: &mut impl BufMut) {
+        // Empty payload
+    }
+}
+
+impl MessagePayload for RoomDescEndMsg {
+    fn message_id() -> MessageId {
+        MessageId::RoomDescEnd
+    }
+
+    fn from_bytes(_buf: &mut impl Buf) -> std::io::Result<Self> {
+        Ok(Self)
+    }
+
+    fn to_bytes(&self, _buf: &mut impl BufMut) {
         // Empty payload
     }
 }
@@ -99,6 +128,20 @@ mod tests {
     }
 
     #[test]
+    fn test_room_goto_msg_payload_trait() {
+        let msg = RoomGotoMsg { dest: 42 };
+
+        // Test to_message()
+        let message = msg.to_message(0);
+        assert_eq!(message.msg_id, MessageId::RoomGoto);
+        assert_eq!(message.ref_num, 0);
+
+        // Test parse_payload()
+        let parsed = message.parse_payload::<RoomGotoMsg>().unwrap();
+        assert_eq!(parsed.dest, msg.dest);
+    }
+
+    #[test]
     fn test_room_desc_end_msg() {
         let msg = RoomDescEndMsg;
 
@@ -110,6 +153,20 @@ mod tests {
         let mut reader = buf.freeze();
         let parsed = RoomDescEndMsg::from_bytes(&mut reader).unwrap();
 
+        assert_eq!(parsed, msg);
+    }
+
+    #[test]
+    fn test_room_desc_end_msg_payload_trait() {
+        let msg = RoomDescEndMsg;
+
+        // Test to_message()
+        let message = msg.to_message(0);
+        assert_eq!(message.msg_id, MessageId::RoomDescEnd);
+        assert_eq!(message.ref_num, 0);
+
+        // Test parse_payload()
+        let parsed = message.parse_payload::<RoomDescEndMsg>().unwrap();
         assert_eq!(parsed, msg);
     }
 }

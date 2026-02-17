@@ -12,6 +12,7 @@
 use bytes::{Buf, BufMut};
 
 use crate::buffer::{BufExt, BufMutExt};
+use crate::messages::{MessageId, MessagePayload};
 use crate::UserID;
 
 /// MSG_TALK - Normal chat message
@@ -34,6 +35,26 @@ impl TalkMsg {
 
     pub fn to_bytes(&self, buf: &mut impl BufMut) {
         buf.put_cstring(&self.text);
+    }
+}
+
+impl MessagePayload for TalkMsg {
+    fn message_id() -> MessageId {
+        MessageId::Talk
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Ok(Self {
+            text: buf.get_cstring()?,
+        })
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        buf.put_cstring(&self.text);
+    }
+
+    fn default_ref_num(&self) -> i32 {
+        0 // Can be overridden with actual UserID when creating message
     }
 }
 
@@ -81,6 +102,24 @@ impl XTalkMsg {
     }
 }
 
+impl MessagePayload for XTalkMsg {
+    fn message_id() -> MessageId {
+        MessageId::XTalk
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
+    }
+
+    fn default_ref_num(&self) -> i32 {
+        0 // Can be overridden with actual UserID when creating message
+    }
+}
+
 /// MSG_WHISPER - Private chat message (request form)
 ///
 /// Client sends this to request a whisper to a specific user.
@@ -106,6 +145,20 @@ impl WhisperMsg {
     pub fn to_bytes(&self, buf: &mut impl BufMut) {
         buf.put_i32(self.target);
         buf.put_cstring(&self.text);
+    }
+}
+
+impl MessagePayload for WhisperMsg {
+    fn message_id() -> MessageId {
+        MessageId::Whisper
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
     }
 }
 
@@ -155,6 +208,20 @@ impl XWhisperMsg {
     }
 }
 
+impl MessagePayload for XWhisperMsg {
+    fn message_id() -> MessageId {
+        MessageId::XWhisper
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
+    }
+}
+
 /// MSG_GMSG - Global message
 ///
 /// Sent from server to all connected users regardless of room.
@@ -173,6 +240,20 @@ impl GmsgMsg {
 
     pub fn to_bytes(&self, buf: &mut impl BufMut) {
         buf.put_cstring(&self.text);
+    }
+}
+
+impl MessagePayload for GmsgMsg {
+    fn message_id() -> MessageId {
+        MessageId::GlobalMsg
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
     }
 }
 
@@ -199,6 +280,20 @@ impl RmsgMsg {
     }
 }
 
+impl MessagePayload for RmsgMsg {
+    fn message_id() -> MessageId {
+        MessageId::RoomMsg
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
+    }
+}
+
 /// MSG_SMSG - Superuser message
 ///
 /// Message sent only to superusers (wizards/gods) in the room.
@@ -220,6 +315,20 @@ impl SmsgMsg {
     }
 }
 
+impl MessagePayload for SmsgMsg {
+    fn message_id() -> MessageId {
+        MessageId::SuperMsg
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -238,6 +347,22 @@ mod tests {
         let parsed = TalkMsg::from_bytes(&mut reader).unwrap();
 
         assert_eq!(parsed, msg);
+    }
+
+    #[test]
+    fn test_talk_msg_payload_trait() {
+        let msg = TalkMsg {
+            text: "Hello, Palace!".to_string(),
+        };
+
+        // Test to_message()
+        let message = msg.to_message(12345);
+        assert_eq!(message.msg_id, MessageId::Talk);
+        assert_eq!(message.ref_num, 12345);
+
+        // Test parse_payload()
+        let parsed = message.parse_payload::<TalkMsg>().unwrap();
+        assert_eq!(parsed.text, msg.text);
     }
 
     #[test]

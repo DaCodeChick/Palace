@@ -13,6 +13,7 @@
 use bytes::{Buf, BufMut};
 
 use crate::buffer::{BufExt, BufMutExt};
+use crate::messages::{MessageId, MessagePayload};
 use crate::{AssetSpec, Point, RoomID, UserID};
 
 /// UserRec - Complete user record structure
@@ -129,6 +130,20 @@ impl UserNewMsg {
     }
 }
 
+impl MessagePayload for UserNewMsg {
+    fn message_id() -> MessageId {
+        MessageId::UserNew
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
+    }
+}
+
 /// MSG_USEREXIT - User leaving a room
 ///
 /// Sent from server to clients when a user leaves the room.
@@ -142,6 +157,20 @@ impl UserExitMsg {
     }
 
     pub fn to_bytes(&self, _buf: &mut impl BufMut) {
+        // Empty payload
+    }
+}
+
+impl MessagePayload for UserExitMsg {
+    fn message_id() -> MessageId {
+        MessageId::UserExit
+    }
+
+    fn from_bytes(_buf: &mut impl Buf) -> std::io::Result<Self> {
+        Ok(Self)
+    }
+
+    fn to_bytes(&self, _buf: &mut impl BufMut) {
         // Empty payload
     }
 }
@@ -171,6 +200,20 @@ impl UserMoveMsg {
     }
 }
 
+impl MessagePayload for UserMoveMsg {
+    fn message_id() -> MessageId {
+        MessageId::UserMove
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
+    }
+}
+
 /// MSG_USERNAME - User changing their name
 ///
 /// Sent bidirectionally to change a user's name.
@@ -189,6 +232,20 @@ impl UserNameMsg {
 
     pub fn to_bytes(&self, buf: &mut impl BufMut) {
         buf.put_pstring(&self.name);
+    }
+}
+
+impl MessagePayload for UserNameMsg {
+    fn message_id() -> MessageId {
+        MessageId::UserNameRename
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
     }
 }
 
@@ -213,6 +270,20 @@ impl UserColorMsg {
     }
 }
 
+impl MessagePayload for UserColorMsg {
+    fn message_id() -> MessageId {
+        MessageId::UserColor
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
+    }
+}
+
 /// MSG_USERFACE - User changing their face
 ///
 /// Sent bidirectionally to change a user's face (0-15).
@@ -231,6 +302,20 @@ impl UserFaceMsg {
 
     pub fn to_bytes(&self, buf: &mut impl BufMut) {
         buf.put_i16(self.face_nbr);
+    }
+}
+
+impl MessagePayload for UserFaceMsg {
+    fn message_id() -> MessageId {
+        MessageId::UserFace
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
     }
 }
 
@@ -260,6 +345,20 @@ impl UserPropMsg {
         for prop in &self.props {
             prop.to_bytes(buf);
         }
+    }
+}
+
+impl MessagePayload for UserPropMsg {
+    fn message_id() -> MessageId {
+        MessageId::UserProp
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
     }
 }
 
@@ -299,6 +398,20 @@ impl UserDescMsg {
         for prop in &self.props {
             prop.to_bytes(buf);
         }
+    }
+}
+
+impl MessagePayload for UserDescMsg {
+    fn message_id() -> MessageId {
+        MessageId::UserDesc
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Self::from_bytes(buf)
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        self.to_bytes(buf);
     }
 }
 
@@ -357,6 +470,33 @@ mod tests {
         let parsed = UserNewMsg::from_bytes(&mut reader).unwrap();
 
         assert_eq!(parsed, msg);
+    }
+
+    #[test]
+    fn test_user_new_msg_payload_trait() {
+        let msg = UserNewMsg {
+            new_user: UserRec {
+                user_id: 999,
+                room_pos: Point { v: 50, h: 75 },
+                prop_spec: [AssetSpec::default(); 9],
+                room_id: 10,
+                face_nbr: 1,
+                color_nbr: 2,
+                away_flag: 0,
+                open_to_msgs: 1,
+                nbr_props: 0,
+                name: "NewUser".to_string(),
+            },
+        };
+
+        // Test to_message()
+        let message = msg.to_message(0);
+        assert_eq!(message.msg_id, MessageId::UserNew);
+        assert_eq!(message.ref_num, 0);
+
+        // Test parse_payload()
+        let parsed = message.parse_payload::<UserNewMsg>().unwrap();
+        assert_eq!(parsed.new_user, msg.new_user);
     }
 
     #[test]
