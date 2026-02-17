@@ -98,6 +98,26 @@ impl Point {
             h: self.h.saturating_sub(other.h),
         }
     }
+
+    /// Parse a Point from bytes (v, h order - 4 bytes total)
+    #[cfg(feature = "net")]
+    #[allow(unused_imports)]
+    pub fn from_bytes(buf: &mut impl bytes::Buf) -> std::io::Result<Self> {
+        use bytes::Buf;
+        Ok(Self {
+            v: buf.get_i16(),
+            h: buf.get_i16(),
+        })
+    }
+
+    /// Serialize this Point to bytes (v, h order - 4 bytes total)
+    #[cfg(feature = "net")]
+    #[allow(unused_imports)]
+    pub fn to_bytes(&self, buf: &mut impl bytes::BufMut) {
+        use bytes::BufMut;
+        buf.put_i16(self.v);
+        buf.put_i16(self.h);
+    }
 }
 
 /// Asset specification - identifies an asset by ID and CRC
