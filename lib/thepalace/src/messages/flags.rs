@@ -197,6 +197,136 @@ bitflags! {
     }
 }
 
+bitflags! {
+    /// Auxiliary flags indicating user's machine type and authentication status.
+    ///
+    /// Used in AuxRegistrationRec to describe the client platform.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct AuxFlags: i32 {
+        /// Unknown machine type
+        const UNKNOWN_MACH = 0;
+        /// Mac 68k
+        const MAC_68K = 1;
+        /// Mac PowerPC
+        const MAC_PPC = 2;
+        /// Windows 16-bit
+        const WIN16 = 3;
+        /// Windows 32-bit
+        const WIN32 = 4;
+        /// Java client
+        const JAVA = 5;
+        /// OS type mask (bits 0-3)
+        const OS_MASK = 0x0000000F;
+        /// Request authentication
+        const AUTHENTICATE = 0x80000000u32 as i32;
+    }
+}
+
+bitflags! {
+    /// Upload capabilities - client's ability to upload assets and files.
+    ///
+    /// Used in AuxRegistrationRec. Most flags are unused by the server.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct UploadCaps: u32 {
+        /// Can upload assets via Palace protocol
+        const ASSETS_PALACE = 0x00000001;
+        /// Can upload assets via FTP
+        const ASSETS_FTP = 0x00000002;
+        /// Can upload assets via HTTP
+        const ASSETS_HTTP = 0x00000004;
+        /// Can upload assets via other protocols
+        const ASSETS_OTHER = 0x00000008;
+        /// Can upload files via Palace protocol
+        const FILES_PALACE = 0x00000010;
+        /// Can upload files via FTP
+        const FILES_FTP = 0x00000020;
+        /// Can upload files via HTTP
+        const FILES_HTTP = 0x00000040;
+        /// Can upload files via other protocols
+        const FILES_OTHER = 0x00000080;
+        /// Extended packet support
+        const EXTEND_PKT = 0x00000100;
+    }
+}
+
+bitflags! {
+    /// Download capabilities - client's ability to download assets and files.
+    ///
+    /// Used in AuxRegistrationRec. Only FILES_HTTP_SERVER is examined by the server.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct DownloadCaps: u32 {
+        /// Can download assets via Palace protocol
+        const ASSETS_PALACE = 0x00000001;
+        /// Can download assets via FTP
+        const ASSETS_FTP = 0x00000002;
+        /// Can download assets via HTTP
+        const ASSETS_HTTP = 0x00000004;
+        /// Can download assets via other protocols
+        const ASSETS_OTHER = 0x00000008;
+        /// Can download files via Palace protocol
+        const FILES_PALACE = 0x00000010;
+        /// Can download files via FTP
+        const FILES_FTP = 0x00000020;
+        /// Can download files via HTTP
+        const FILES_HTTP = 0x00000040;
+        /// Can download files via other protocols
+        const FILES_OTHER = 0x00000080;
+        /// Can download files via HTTP server
+        const FILES_HTTP_SERVER = 0x00000100;
+        /// Extended packet support
+        const EXTEND_PKT = 0x00000200;
+    }
+}
+
+bitflags! {
+    /// 2D engine capabilities - client's 2D display engine.
+    ///
+    /// Used in AuxRegistrationRec. Completely unused by the server.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct Engine2DCaps: u32 {
+        /// Palace native engine
+        const PALACE = 0x00000001;
+        /// Double-byte character support
+        const DOUBLEBYTE = 0x00000002;
+    }
+}
+
+bitflags! {
+    /// 2D graphics capabilities - client's supported image formats.
+    ///
+    /// Used in AuxRegistrationRec. Completely unused by the server.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct Graphics2DCaps: u32 {
+        /// GIF87 format
+        const GIF87 = 0x00000001;
+        /// GIF89a format
+        const GIF89A = 0x00000002;
+        /// JPEG format
+        const JPG = 0x00000004;
+        /// TIFF format
+        const TIFF = 0x00000008;
+        /// Targa format
+        const TARGA = 0x00000010;
+        /// BMP format
+        const BMP = 0x00000020;
+        /// PICT format
+        const PCT = 0x00000040;
+    }
+}
+
+bitflags! {
+    /// 3D engine capabilities - client's 3D graphics capabilities.
+    ///
+    /// Used in AuxRegistrationRec. Completely unused by the server.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct Engine3DCaps: u32 {
+        /// VRML 1.0 support
+        const VRML1 = 0x00000001;
+        /// VRML 2.0 support
+        const VRML2 = 0x00000002;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -243,5 +373,35 @@ mod tests {
         assert!(events.contains(ScriptEventFlags::SELECT));
         assert!(events.contains(ScriptEventFlags::ENTER));
         assert!(!events.contains(ScriptEventFlags::ALARM));
+    }
+
+    #[test]
+    fn test_aux_flags() {
+        let flags = AuxFlags::WIN32 | AuxFlags::AUTHENTICATE;
+        assert!(flags.contains(AuxFlags::AUTHENTICATE));
+        assert!(flags.intersects(AuxFlags::OS_MASK));
+    }
+
+    #[test]
+    fn test_upload_caps() {
+        let caps = UploadCaps::ASSETS_PALACE | UploadCaps::FILES_HTTP;
+        assert!(caps.contains(UploadCaps::ASSETS_PALACE));
+        assert!(caps.contains(UploadCaps::FILES_HTTP));
+        assert!(!caps.contains(UploadCaps::EXTEND_PKT));
+    }
+
+    #[test]
+    fn test_download_caps() {
+        let caps = DownloadCaps::FILES_HTTP_SERVER | DownloadCaps::ASSETS_PALACE;
+        assert!(caps.contains(DownloadCaps::FILES_HTTP_SERVER));
+        assert!(caps.contains(DownloadCaps::ASSETS_PALACE));
+    }
+
+    #[test]
+    fn test_graphics_2d_caps() {
+        let caps = Graphics2DCaps::GIF89A | Graphics2DCaps::JPG | Graphics2DCaps::BMP;
+        assert!(caps.contains(Graphics2DCaps::GIF89A));
+        assert!(caps.contains(Graphics2DCaps::JPG));
+        assert!(!caps.contains(Graphics2DCaps::TIFF));
     }
 }

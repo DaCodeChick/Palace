@@ -104,6 +104,11 @@ impl Point {
 ///
 /// Assets (props, backgrounds, etc.) are identified by a unique ID within
 /// their type namespace, and verified using a CRC32 checksum.
+///
+/// Wire format: 10 bytes
+/// - id: 4 bytes (i32, big-endian)
+/// - crc: 4 bytes (u32, big-endian)
+/// - reserved: 2 bytes (always 0)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(C)]
 pub struct AssetSpec {
@@ -111,6 +116,12 @@ pub struct AssetSpec {
     pub id: i32,
     /// CRC32 checksum for verification
     pub crc: u32,
+}
+
+impl Default for AssetSpec {
+    fn default() -> Self {
+        Self { id: 0, crc: 0 }
+    }
 }
 
 impl AssetSpec {
@@ -122,6 +133,24 @@ impl AssetSpec {
     /// Check if CRC is "don't care" (0 means no verification)
     pub fn crc_is_dont_care(&self) -> bool {
         self.crc == 0
+    }
+
+    /// Parse an AssetSpec from bytes
+    #[allow(unused_imports)]
+    pub fn from_bytes(buf: &mut impl bytes::Buf) -> std::io::Result<Self> {
+        use bytes::Buf;
+        Ok(Self {
+            id: buf.get_i32(),
+            crc: buf.get_u32(),
+        })
+    }
+
+    /// Serialize this AssetSpec to bytes
+    #[allow(unused_imports)]
+    pub fn to_bytes(&self, buf: &mut impl bytes::BufMut) {
+        use bytes::BufMut;
+        buf.put_i32(self.id);
+        buf.put_u32(self.crc);
     }
 }
 

@@ -9,18 +9,24 @@
 //! This module contains message type identifiers, bitflags, and message structure
 //! implementations for all 60+ Palace Protocol message types.
 
+pub mod auth;
+pub mod chat;
 pub mod flags;
 pub mod message;
 pub mod message_id;
+pub mod room;
+pub mod user;
 
+pub use auth::*;
+pub use chat::*;
 pub use flags::*;
 pub use message::Message;
 pub use message_id::MessageId;
+pub use room::*;
+pub use user::*;
 
-// TODO: Implement specific message payload types
-// - Authentication messages (TIYID, LOGON, AUTHENTICATE, etc.)
-// - Room messages (ROOMGOTO, ROOMDESC, etc.)
-// - User messages (USERNEW, USEREXIT, USERMOVE, etc.)
-// - Chat messages (TALK, WHISPER, XTALK, etc.)
+// TODO: Implement remaining message payload types
 // - Asset messages (ASSETQUERY, ASSETSEND, ASSETREGI)
-// - And 50+ more message types
+// - Server info messages (SERVERINFO, USERSTATUS, etc.)
+// - Complete RoomRec structure for MSG_ROOMDESC
+// - And 40+ more message types

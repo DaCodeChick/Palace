@@ -59,18 +59,19 @@ pub trait BufExt: Buf {
 
     /// Read a Str31 (Pascal string with max length 31) from the buffer.
     ///
-    /// This is commonly used for usernames and room names in the Palace Protocol.
-    /// Format is identical to PString but the length is guaranteed to be ≤ 31.
+    /// Reads a fixed 32-byte field: 1 length byte + up to 31 chars + padding.
+    /// Format is identical to PString but the length is guaranteed to be ≤ 31
+    /// and the field is always 32 bytes.
     ///
     /// # Errors
     ///
     /// Returns `InvalidData` if the length prefix is > 31.
     /// Returns `UnexpectedEof` if there aren't enough bytes in the buffer.
     fn get_str31(&mut self) -> io::Result<String> {
-        if !self.has_remaining() {
+        if self.remaining() < 32 {
             return Err(io::Error::new(
                 ErrorKind::UnexpectedEof,
-                "no length byte for Str31",
+                format!("Str31 needs 32 bytes, only {} remain", self.remaining()),
             ));
         }
 
@@ -83,19 +84,12 @@ pub trait BufExt: Buf {
         }
 
         let len = len as usize;
-        if self.remaining() < len {
-            return Err(io::Error::new(
-                ErrorKind::UnexpectedEof,
-                format!(
-                    "Str31 length {} but only {} bytes remain",
-                    len,
-                    self.remaining()
-                ),
-            ));
-        }
-
         let mut bytes = vec![0u8; len];
         self.copy_to_slice(&mut bytes);
+
+        // Skip padding to complete the 32-byte field
+        let padding = 31 - len;
+        self.advance(padding);
 
         String::from_utf8(bytes).map_err(|e| {
             io::Error::new(
@@ -107,17 +101,19 @@ pub trait BufExt: Buf {
 
     /// Read a Str63 (Pascal string with max length 63) from the buffer.
     ///
-    /// Format is identical to PString but the length is guaranteed to be ≤ 63.
+    /// Reads a fixed 64-byte field: 1 length byte + up to 63 chars + padding.
+    /// Format is identical to PString but the length is guaranteed to be ≤ 63
+    /// and the field is always 64 bytes.
     ///
     /// # Errors
     ///
     /// Returns `InvalidData` if the length prefix is > 63.
     /// Returns `UnexpectedEof` if there aren't enough bytes in the buffer.
     fn get_str63(&mut self) -> io::Result<String> {
-        if !self.has_remaining() {
+        if self.remaining() < 64 {
             return Err(io::Error::new(
                 ErrorKind::UnexpectedEof,
-                "no length byte for Str63",
+                format!("Str63 needs 64 bytes, only {} remain", self.remaining()),
             ));
         }
 
@@ -130,19 +126,12 @@ pub trait BufExt: Buf {
         }
 
         let len = len as usize;
-        if self.remaining() < len {
-            return Err(io::Error::new(
-                ErrorKind::UnexpectedEof,
-                format!(
-                    "Str63 length {} but only {} bytes remain",
-                    len,
-                    self.remaining()
-                ),
-            ));
-        }
-
         let mut bytes = vec![0u8; len];
         self.copy_to_slice(&mut bytes);
+
+        // Skip padding to complete the 64-byte field
+        let padding = 63 - len;
+        self.advance(padding);
 
         String::from_utf8(bytes).map_err(|e| {
             io::Error::new(
@@ -208,6 +197,8 @@ pub trait BufMutExt: BufMut {
 
     /// Write a Str31 (Pascal string with max length 31) to the buffer.
     ///
+    /// Writes a fixed 32-byte field: 1 length byte + up to 31 chars + padding.
+    ///
     /// # Panics
     ///
     /// Panics if the string is longer than 31 bytes.
@@ -222,9 +213,16 @@ pub trait BufMutExt: BufMut {
 
         self.put_u8(bytes.len() as u8);
         self.put_slice(bytes);
+        // Pad to 32 bytes total (1 len + 31 max chars)
+        let padding = 31 - bytes.len();
+        for _ in 0..padding {
+            self.put_u8(0);
+        }
     }
 
     /// Write a Str63 (Pascal string with max length 63) to the buffer.
+    ///
+    /// Writes a fixed 64-byte field: 1 length byte + up to 63 chars + padding.
     ///
     /// # Panics
     ///
@@ -240,6 +238,11 @@ pub trait BufMutExt: BufMut {
 
         self.put_u8(bytes.len() as u8);
         self.put_slice(bytes);
+        // Pad to 64 bytes total (1 len + 63 max chars)
+        let padding = 63 - bytes.len();
+        for _ in 0..padding {
+            self.put_u8(0);
+        }
     }
 
     /// Write a C-style null-terminated string (CString) to the buffer.
