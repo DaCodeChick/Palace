@@ -125,55 +125,49 @@ impl AssetSpec {
     }
 }
 
-/// Asset type identifier (4-character ASCII code).
+/// Asset type identifier.
 ///
-/// Asset types are represented as big-endian u32 values where each byte
-/// corresponds to an ASCII character, similar to MessageId.
+/// Identifies the type of asset in the Palace Protocol.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[repr(transparent)]
-pub struct AssetType(pub u32);
+#[repr(u32)]
+pub enum AssetType {
+    /// Prop asset ('Prop' = 0x50726f70)
+    Prop = 0x50726f70,
+    /// User database asset ('User' = 0x55736572)
+    Userbase = 0x55736572,
+    /// IP user database asset ('IUsr' = 0x49557372) - historical artifact
+    IpUserbase = 0x49557372,
+}
 
 impl AssetType {
-    /// Prop asset ('Prop' = 0x50726f70)
-    pub const PROP: Self = Self(0x50726f70);
-
-    /// User database asset ('User' = 0x55736572)
-    pub const USERBASE: Self = Self(0x55736572);
-
-    /// IP user database asset ('IUsr' = 0x49557372) - historical artifact
-    pub const IPUSERBASE: Self = Self(0x49557372);
-
     /// Convert AssetType to its 4-character ASCII representation
-    pub fn as_str(&self) -> String {
-        let bytes = self.0.to_be_bytes();
-        String::from_utf8_lossy(&bytes).to_string()
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AssetType::Prop => "Prop",
+            AssetType::Userbase => "User",
+            AssetType::IpUserbase => "IUsr",
+        }
     }
 
-    /// Create AssetType from 4-character ASCII string
-    pub fn from_str(s: &str) -> Option<Self> {
-        if s.len() != 4 {
-            return None;
+    /// Create AssetType from u32 value
+    pub fn from_u32(value: u32) -> Option<Self> {
+        match value {
+            0x50726f70 => Some(AssetType::Prop),
+            0x55736572 => Some(AssetType::Userbase),
+            0x49557372 => Some(AssetType::IpUserbase),
+            _ => None,
         }
-        let bytes = s.as_bytes();
-        let value = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-        Some(Self(value))
     }
 
     /// Get the raw u32 value
     pub const fn as_u32(&self) -> u32 {
-        self.0
-    }
-}
-
-impl From<u32> for AssetType {
-    fn from(value: u32) -> Self {
-        Self(value)
+        *self as u32
     }
 }
 
 impl From<AssetType> for u32 {
     fn from(asset: AssetType) -> u32 {
-        asset.0
+        asset as u32
     }
 }
 
@@ -243,14 +237,22 @@ mod tests {
     #[test]
     fn test_asset_types() {
         // Verify 4-char ASCII codes
-        assert_eq!(AssetType::PROP.as_u32(), 0x50726f70);
+        assert_eq!(AssetType::Prop.as_u32(), 0x50726f70);
+        assert_eq!(AssetType::Userbase.as_u32(), 0x55736572);
+        assert_eq!(AssetType::IpUserbase.as_u32(), 0x49557372);
 
-        // Can convert back to string for debugging
-        let bytes = AssetType::PROP.as_u32().to_be_bytes();
+        // Can convert back to string
+        assert_eq!(AssetType::Prop.as_str(), "Prop");
+        assert_eq!(AssetType::Userbase.as_str(), "User");
+        assert_eq!(AssetType::IpUserbase.as_str(), "IUsr");
+
+        // Test u32 conversion
+        assert_eq!(AssetType::from_u32(0x50726f70), Some(AssetType::Prop));
+        assert_eq!(AssetType::from_u32(0x55736572), Some(AssetType::Userbase));
+        assert_eq!(AssetType::from_u32(0xDEADBEEF), None);
+
+        // Test bytes match ASCII
+        let bytes = AssetType::Prop.as_u32().to_be_bytes();
         assert_eq!(&bytes, b"Prop");
-
-        // Test string conversion
-        assert_eq!(AssetType::PROP.as_str(), "Prop");
-        assert_eq!(AssetType::from_str("Prop"), Some(AssetType::PROP));
     }
 }
