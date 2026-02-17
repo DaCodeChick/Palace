@@ -6,15 +6,16 @@
 //! - 4 bytes: Reference number (big-endian i32)
 //! - Variable: Payload data
 //!
-//! This module will contain implementations for all 60+ Palace Protocol message types
-//! including authentication, room navigation, user presence, chat, props, assets, etc.
+//! This module contains message type identifiers, bitflags, and message structure
+//! implementations for all 60+ Palace Protocol message types.
 
-// TODO: Implement message types
-// - MSG_TIYID (0x74697972 'tiyr') - Client version identification
-// - MSG_REGI (0x72656769 'regi') - User registration
-// - MSG_LOGON (0x6c6f676f 'logo') - User logon
-// - MSG_AUTH (0x61757468 'auth') - Authentication response
-// - MSG_ROOMGOTO (0x726f6f6d 'room') - Change rooms
-// - MSG_USERNEW (0x75736572 'user') - New user entered
-// - MSG_CHAT (0x63686174 'chat') - Chat message
-// - ... and 50+ more message types
+pub mod flags;
+pub mod message_id;
+
+pub use flags::*;
+pub use message_id::MessageId;
+
+// TODO: Implement message structures
+// - ClientMsg / ServerMsg base structures
+// - Specific message payload types for each MessageId
+// - Message parsing and serialization
