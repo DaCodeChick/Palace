@@ -1,0 +1,24 @@
+[package]
+name = "palace-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Palace server with Tokio and SQLite"
+
+[dependencies]
+thepalace = { path = "../lib/thepalace" }
+tokio = { workspace = true }
+sqlx = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+argon2 = { workspace = true }
+
+[[bin]]
+name = "palace-server"
+path = "src/main.rs"

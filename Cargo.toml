@@ -1,0 +1,45 @@
+[workspace]
+members = ["lib/thepalace", "server"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+authors = ["Palace Contributors"]
+repository = "https://github.com/yourusername/Palace"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.42", features = ["full"] }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "migrate"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Utilities
+bitflags = "2.9"
+bytes = "1.10"
+
+# Cryptography
+argon2 = "0.5"
+
+# Compression
+flate2 = "1.1"
+
+# Image formats
+png = "0.17"
+
+# FFI
+cbindgen = "0.27"

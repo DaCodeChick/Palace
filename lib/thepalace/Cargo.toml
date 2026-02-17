@@ -1,0 +1,34 @@
+[package]
+name = "thepalace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Palace protocol library - networking, Iptscrae, assets, and room formats"
+
+[features]
+default = ["net", "prop", "iptscrae", "assets", "room"]
+net = ["dep:bitflags", "dep:bytes"]
+prop = ["dep:bitflags", "dep:bytes", "dep:flate2", "dep:png"]
+iptscrae = []
+assets = ["dep:png", "dep:flate2"]
+room = ["dep:bitflags", "dep:bytes"]
+ffi = ["dep:cbindgen"]
+
+[dependencies]
+bitflags = { workspace = true, optional = true }
+bytes = { workspace = true, optional = true }
+flate2 = { workspace = true, optional = true }
+png = { workspace = true, optional = true }
+thiserror = { workspace = true }
+cfg-if = "1.0"
+
+[build-dependencies]
+cbindgen = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+
+[lib]
+crate-type = ["rlib", "cdylib", "staticlib"]
