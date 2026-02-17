@@ -10,12 +10,17 @@
 //! implementations for all 60+ Palace Protocol message types.
 
 pub mod flags;
+pub mod message;
 pub mod message_id;
 
 pub use flags::*;
+pub use message::Message;
 pub use message_id::MessageId;
 
-// TODO: Implement message structures
-// - ClientMsg / ServerMsg base structures
-// - Specific message payload types for each MessageId
-// - Message parsing and serialization
+// TODO: Implement specific message payload types
+// - Authentication messages (TIYID, LOGON, AUTHENTICATE, etc.)
+// - Room messages (ROOMGOTO, ROOMDESC, etc.)
+// - User messages (USERNEW, USEREXIT, USERMOVE, etc.)
+// - Chat messages (TALK, WHISPER, XTALK, etc.)
+// - Asset messages (ASSETQUERY, ASSETSEND, ASSETREGI)
+// - And 50+ more message types
