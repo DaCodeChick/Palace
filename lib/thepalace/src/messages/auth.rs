@@ -79,6 +79,9 @@ pub struct AuxRegistrationRec {
     pub demo_limit: u32,
     /// Desired room ID to enter
     pub desired_room: RoomID,
+    /// Client signature (6 bytes) - identifies the Palace client software
+    /// Examples: '350211' for ThePalace, 'PC' + 4-byte version for PalaceChat, 'OPNPAL' for OpenPalace
+    pub client_signature: [u8; 6],
     /// Requested protocol version
     pub ul_requested_protocol_version: u32,
     /// Upload capabilities flags
@@ -111,6 +114,7 @@ impl AuxRegistrationRec {
             total_elapsed: 0,
             demo_limit: 0,
             desired_room,
+            client_signature: [0; 6],
             ul_requested_protocol_version: 0,
             ul_upload_caps: UploadCaps::empty(),
             ul_download_caps: DownloadCaps::empty(),
@@ -134,6 +138,7 @@ impl AuxRegistrationRec {
             total_elapsed: 0,
             demo_limit: 0,
             desired_room,
+            client_signature: [0; 6],
             ul_requested_protocol_version: 0,
             ul_upload_caps: UploadCaps::empty(),
             ul_download_caps: DownloadCaps::empty(),
@@ -164,9 +169,9 @@ impl AuxRegistrationRec {
         let demo_limit = buf.get_u32();
         let desired_room = buf.get_i16();
 
-        // Skip 6 bytes of padding
-        let _ = buf.get_i32();
-        let _ = buf.get_i16();
+        // Read 6-byte client signature
+        let mut client_signature = [0u8; 6];
+        buf.copy_to_slice(&mut client_signature);
 
         let ul_requested_protocol_version = buf.get_u32();
         let ul_upload_caps = UploadCaps::from_bits_truncate(buf.get_u32());
@@ -187,6 +192,7 @@ impl AuxRegistrationRec {
             total_elapsed,
             demo_limit,
             desired_room,
+            client_signature,
             ul_requested_protocol_version,
             ul_upload_caps,
             ul_download_caps,
@@ -209,9 +215,8 @@ impl AuxRegistrationRec {
         buf.put_u32(self.total_elapsed);
         buf.put_u32(self.demo_limit);
         buf.put_i16(self.desired_room);
-        // Write 6 bytes of zero padding
-        buf.put_i32(0);
-        buf.put_i16(0);
+        // Write 6-byte client signature
+        buf.put_slice(&self.client_signature);
         buf.put_u32(self.ul_requested_protocol_version);
         buf.put_u32(self.ul_upload_caps.bits());
         buf.put_u32(self.ul_download_caps.bits());
