@@ -129,19 +129,13 @@ impl Point {
 /// - id: 4 bytes (i32, big-endian)
 /// - crc: 4 bytes (u32, big-endian)
 /// - padding: 2 bytes (always 0)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[repr(C)]
 pub struct AssetSpec {
     /// Asset ID number
     pub id: i32,
     /// CRC32 checksum for verification
     pub crc: u32,
-}
-
-impl Default for AssetSpec {
-    fn default() -> Self {
-        Self { id: 0, crc: 0 }
-    }
 }
 
 impl AssetSpec {

@@ -6,6 +6,7 @@
 //! All message IDs in this file are from the official Palace Protocol specification.
 
 use std::fmt;
+use std::str::FromStr;
 
 /// Palace Protocol message type identifier.
 ///
@@ -238,77 +239,6 @@ impl MessageId {
         }
     }
 
-    /// Create MessageId from 4-character ASCII string
-    pub fn from_str(s: &str) -> Option<Self> {
-        if s.len() != 4 {
-            return None;
-        }
-        Some(match s {
-            "tiyr" => Self::Tiyid,
-            "rep2" => Self::AltLogonReply,
-            "regi" => Self::Logon,
-            "auth" => Self::Authenticate,
-            "autr" => Self::AuthResponse,
-            "blow" => Self::Blowthru,
-            "durl" => Self::DisplayUrl,
-            "draw" => Self::Draw,
-            "sInf" => Self::ExtendedInfo,
-            "fnfe" => Self::FileNotFnd,
-            "qFil" => Self::FileQuery,
-            "sFil" => Self::FileSend,
-            "gmsg" => Self::Gmsg,
-            "HTTP" => Self::HttpServer,
-            "kill" => Self::KillUser,
-            "rLst" => Self::ListOfAllRooms,
-            "uLst" => Self::ListOfAllUsers,
-            "bye " => Self::Logoff,
-            "sErr" => Self::NavError,
-            "NOOP" => Self::Noop,
-            "pLoc" => Self::PictMove,
-            "ping" => Self::Ping,
-            "pong" => Self::Pong,
-            "dPrp" => Self::PropDel,
-            "mPrp" => Self::PropMove,
-            "nPrp" => Self::PropNew,
-            "rmsg" => Self::Rmsg,
-            "room" => Self::RoomDesc,
-            "endr" => Self::RoomDescEnd,
-            "navR" => Self::RoomGoto,
-            "nRom" => Self::RoomNew,
-            "sRom" => Self::RoomSetDesc,
-            "down" => Self::ServerDown,
-            "sinf" => Self::ServerInfo,
-            "smsg" => Self::Smsg,
-            "opSd" => Self::SpotDel,
-            "coLs" => Self::SpotMove,
-            "opSn" => Self::SpotNew,
-            "sSta" => Self::SpotState,
-            "susr" => Self::SuperUser,
-            "talk" => Self::Talk,
-            "whis" => Self::Whisper,
-            "xtlk" => Self::XTalk,
-            "xwis" => Self::XWhisper,
-            "usrC" => Self::UserColor,
-            "usrD" => Self::UserDesc,
-            "eprs" => Self::UserExit,
-            "usrF" => Self::UserFace,
-            "rprs" => Self::UserList,
-            "log " => Self::UserLog,
-            "uLoc" => Self::UserMove,
-            "usrN" => Self::UserName,
-            "nprs" => Self::UserNew,
-            "usrP" => Self::UserProp,
-            "uSta" => Self::UserStatus,
-            "vers" => Self::Version,
-            "qAst" => Self::AssetQuery,
-            "sAst" => Self::AssetSend,
-            "rAst" => Self::AssetRegi,
-            "lock" => Self::DoorLock,
-            "unlk" => Self::DoorUnlock,
-            _ => return None,
-        })
-    }
-
     /// Create MessageId from raw u32 value (big-endian)
     ///
     /// Returns `None` if the value doesn't match any known message type.
@@ -344,7 +274,7 @@ impl MessageId {
             // Doors
             0x6c6f636b | 0x756e6c6b => {
                 // SAFETY: We've verified the value is a valid discriminant
-                Some(unsafe { std::mem::transmute(value) })
+                Some(unsafe { std::mem::transmute::<u32, MessageId>(value) })
             }
             _ => None,
         }
@@ -354,6 +284,80 @@ impl MessageId {
 impl fmt::Display for MessageId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+impl FromStr for MessageId {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() != 4 {
+            return Err(());
+        }
+        match s {
+            "tiyr" => Ok(Self::Tiyid),
+            "rep2" => Ok(Self::AltLogonReply),
+            "regi" => Ok(Self::Logon),
+            "auth" => Ok(Self::Authenticate),
+            "autr" => Ok(Self::AuthResponse),
+            "blow" => Ok(Self::Blowthru),
+            "durl" => Ok(Self::DisplayUrl),
+            "draw" => Ok(Self::Draw),
+            "sInf" => Ok(Self::ExtendedInfo),
+            "fnfe" => Ok(Self::FileNotFnd),
+            "qFil" => Ok(Self::FileQuery),
+            "sFil" => Ok(Self::FileSend),
+            "gmsg" => Ok(Self::Gmsg),
+            "HTTP" => Ok(Self::HttpServer),
+            "kill" => Ok(Self::KillUser),
+            "rLst" => Ok(Self::ListOfAllRooms),
+            "uLst" => Ok(Self::ListOfAllUsers),
+            "bye " => Ok(Self::Logoff),
+            "sErr" => Ok(Self::NavError),
+            "NOOP" => Ok(Self::Noop),
+            "pLoc" => Ok(Self::PictMove),
+            "ping" => Ok(Self::Ping),
+            "pong" => Ok(Self::Pong),
+            "dPrp" => Ok(Self::PropDel),
+            "mPrp" => Ok(Self::PropMove),
+            "nPrp" => Ok(Self::PropNew),
+            "rmsg" => Ok(Self::Rmsg),
+            "room" => Ok(Self::RoomDesc),
+            "endr" => Ok(Self::RoomDescEnd),
+            "navR" => Ok(Self::RoomGoto),
+            "nRom" => Ok(Self::RoomNew),
+            "sRom" => Ok(Self::RoomSetDesc),
+            "down" => Ok(Self::ServerDown),
+            "sinf" => Ok(Self::ServerInfo),
+            "smsg" => Ok(Self::Smsg),
+            "opSd" => Ok(Self::SpotDel),
+            "coLs" => Ok(Self::SpotMove),
+            "opSn" => Ok(Self::SpotNew),
+            "sSta" => Ok(Self::SpotState),
+            "susr" => Ok(Self::SuperUser),
+            "talk" => Ok(Self::Talk),
+            "whis" => Ok(Self::Whisper),
+            "xtlk" => Ok(Self::XTalk),
+            "xwis" => Ok(Self::XWhisper),
+            "usrC" => Ok(Self::UserColor),
+            "usrD" => Ok(Self::UserDesc),
+            "eprs" => Ok(Self::UserExit),
+            "usrF" => Ok(Self::UserFace),
+            "rprs" => Ok(Self::UserList),
+            "log " => Ok(Self::UserLog),
+            "uLoc" => Ok(Self::UserMove),
+            "usrN" => Ok(Self::UserName),
+            "nprs" => Ok(Self::UserNew),
+            "usrP" => Ok(Self::UserProp),
+            "uSta" => Ok(Self::UserStatus),
+            "vers" => Ok(Self::Version),
+            "qAst" => Ok(Self::AssetQuery),
+            "sAst" => Ok(Self::AssetSend),
+            "rAst" => Ok(Self::AssetRegi),
+            "lock" => Ok(Self::DoorLock),
+            "unlk" => Ok(Self::DoorUnlock),
+            _ => Err(()),
+        }
     }
 }
 
@@ -385,12 +389,12 @@ mod tests {
 
     #[test]
     fn test_message_id_from_str() {
-        assert_eq!(MessageId::from_str("tiyr"), Some(MessageId::Tiyid));
-        assert_eq!(MessageId::from_str("talk"), Some(MessageId::Talk));
-        assert_eq!(MessageId::from_str("ping"), Some(MessageId::Ping));
-        assert_eq!(MessageId::from_str("HTTP"), Some(MessageId::HttpServer));
-        assert_eq!(MessageId::from_str("xyz"), None); // Not a valid message
-        assert_eq!(MessageId::from_str("toolong"), None); // Too long
+        assert_eq!("tiyr".parse::<MessageId>(), Ok(MessageId::Tiyid));
+        assert_eq!("talk".parse::<MessageId>(), Ok(MessageId::Talk));
+        assert_eq!("ping".parse::<MessageId>(), Ok(MessageId::Ping));
+        assert_eq!("HTTP".parse::<MessageId>(), Ok(MessageId::HttpServer));
+        assert_eq!("xyz".parse::<MessageId>(), Err(())); // Not a valid message
+        assert_eq!("toolong".parse::<MessageId>(), Err(())); // Too long
     }
 
     #[test]
