@@ -160,7 +160,7 @@ impl AuxRegistrationRec {
         let counter = buf.get_u32();
         let user_name = buf.get_str31()?;
         let wiz_password = buf.get_str31()?;
-        let aux_flags = AuxFlags::from_bits_truncate(buf.get_i32());
+        let aux_flags = AuxFlags::from_bits_truncate(buf.get_u32());
         let puid_ctr = buf.get_u32();
         let puid_crc = buf.get_u32();
         let demo_elapsed = buf.get_u32();
@@ -207,7 +207,7 @@ impl AuxRegistrationRec {
         buf.put_u32(self.counter);
         buf.put_str31(&self.user_name);
         buf.put_str31(&self.wiz_password);
-        buf.put_i32(self.aux_flags.bits());
+        buf.put_u32(self.aux_flags.bits());
         buf.put_u32(self.puid_ctr);
         buf.put_u32(self.puid_crc);
         buf.put_u32(self.demo_elapsed);

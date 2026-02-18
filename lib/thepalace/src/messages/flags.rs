@@ -129,8 +129,6 @@ bitflags! {
         const CLOSED_SERVER = 0x0002;
         /// Guests are treated as members
         const GUESTS_ARE_MEMBERS = 0x0004;
-        /// Unused flag bit
-        const UNUSED_1 = 0x0008;
         /// InstantPalace server
         const INSTANT_PALACE = 0x0010;
         /// PalacePresents branding
@@ -202,7 +200,7 @@ bitflags! {
     ///
     /// Used in AuxRegistrationRec to describe the client platform.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-    pub struct AuxFlags: i32 {
+    pub struct AuxFlags: u32 {
         /// Unknown machine type
         const UNKNOWN_MACH = 0;
         /// Mac 68k
@@ -218,7 +216,7 @@ bitflags! {
         /// OS type mask (bits 0-3)
         const OS_MASK = 0x0000000F;
         /// Request authentication
-        const AUTHENTICATE = 0x80000000u32 as i32;
+        const AUTHENTICATE = 0x80000000;
     }
 }
 
