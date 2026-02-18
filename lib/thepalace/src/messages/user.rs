@@ -237,7 +237,7 @@ impl UserNameMsg {
 
 impl MessagePayload for UserNameMsg {
     fn message_id() -> MessageId {
-        MessageId::UserNameRename
+        MessageId::UserName
     }
 
     fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {

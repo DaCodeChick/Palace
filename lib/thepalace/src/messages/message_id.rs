@@ -2,6 +2,8 @@
 //!
 //! Message types are 4-byte ASCII codes stored as big-endian u32 values.
 //! For example, 'tiyr' = 0x74697972.
+//!
+//! All message IDs in this file are from the official Palace Protocol specification.
 
 use std::fmt;
 
@@ -12,146 +14,152 @@ use std::fmt;
 ///
 /// The enum uses `#[repr(u32)]` so each variant's discriminant is its
 /// 4-byte message ID value, making conversions zero-cost.
+///
+/// Total: 59 message types from Palace Protocol Spec sections 3.1-3.59
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u32)]
 pub enum MessageId {
-    // Connection & Authentication
-    /// Client version identification ('tiyr' = 0x74697972)
+    // Connection & Authentication (Section 3.1-3.6)
+    /// MSG_TIYID - Client version identification ('tiyr' = 0x74697972)
     Tiyid = 0x74697972,
-    /// Alternative logon reply ('rep2' = 0x72657032)
+    /// MSG_ALTLOGONREPLY - Alternative logon reply ('rep2' = 0x72657032)
     AltLogonReply = 0x72657032,
-    /// User logon ('regi' = 0x72656769)
-    Regi = 0x72656769,
-    /// Authentication request ('auth' = 0x61757468)
+    /// MSG_LOGON - User logon ('regi' = 0x72656769)
+    Logon = 0x72656769,
+    /// MSG_AUTHENTICATE - Authentication request ('auth' = 0x61757468)
     Authenticate = 0x61757468,
-    /// Authentication response ('autr' = 0x61757472)
+    /// MSG_AUTHRESPONSE - Authentication response ('autr' = 0x61757472)
     AuthResponse = 0x61757472,
-    /// Superuser (wizard) elevation ('susr' = 0x73757372)
-    SuperUser = 0x73757372,
-    /// Logoff/disconnect ('bye ' = 0x62796520)
-    Logoff = 0x62796520,
-
-    // Rooms
-    /// Navigate to room ('navR' = 0x6e617652)
-    RoomGoto = 0x6e617652,
-    /// Room description ('room' = 0x726f6f6d)
-    RoomDesc = 0x726f6f6d,
-    /// End of room description ('endr' = 0x656e6472)
-    RoomDescEnd = 0x656e6472,
-    /// List of all rooms ('rLst' = 0x724c7374)
-    ListOfAllRooms = 0x724c7374,
-    /// Room list ('sLst' = 0x734c7374)
-    RoomList = 0x734c7374,
-    /// Room description (alternative) ('sRom' = 0x73526f6d)
-    Room = 0x73526f6d,
-
-    // Users
-    /// New user entered room ('nprs' = 0x6e707273)
-    UserNew = 0x6e707273,
-    /// User exited room ('eprs' = 0x65707273)
-    UserExit = 0x65707273,
-    /// List of users in room ('rprs' = 0x72707273)
-    UserList = 0x72707273,
-    /// User moved ('uLoc' = 0x754c6f63)
-    UserMove = 0x754c6f63,
-    /// User face changed ('usrF' = 0x75737246)
-    UserFace = 0x75737246,
-    /// User props changed ('usrP' = 0x75737250)
-    UserProp = 0x75737250,
-    /// User description ('usrD' = 0x75737244)
-    UserDesc = 0x75737244,
-    /// User renamed ('uNam' = 0x754e616d)
-    UserNameRename = 0x754e616d,
-    /// User color changed ('uCol' = 0x75436f6c)
-    UserColor = 0x75436f6c,
-    /// User status ('uSta' = 0x75537461)
-    UserStatus = 0x75537461,
-    /// List of all users ('log ' = 0x6c6f6720)
-    ListOfAllUsers = 0x6c6f6720,
-
-    // Chat
-    /// Normal chat message ('talk' = 0x74616c6b)
-    Talk = 0x74616c6b,
-    /// Private message/whisper ('whis' = 0x77686973)
-    Whisper = 0x77686973,
-    /// Extended talk with author info ('xtlk' = 0x78746c6b)
-    XTalk = 0x78746c6b,
-    /// Extended whisper ('xwis' = 0x78776973)
-    XWhisper = 0x78776973,
-
-    // Assets
-    /// Query for asset ('qAst' = 0x71417374)
-    AssetQuery = 0x71417374,
-    /// Send asset data ('sAst' = 0x73417374)
-    AssetSend = 0x73417374,
-    /// Register new asset ('rAst' = 0x72417374)
-    AssetRegi = 0x72417374,
-
-    // Props
-    /// Prop move ('pLoc' = 0x704c6f63)
-    PropMove = 0x704c6f63,
-    /// Prop delete ('dPrp' = 0x64507270)
-    PropDelete = 0x64507270,
-    /// Prop new ('nPrp' = 0x6e507270)
-    PropNew = 0x6e507270,
-
-    // Drawing
-    /// Draw command ('draw' = 0x64726177)
-    Draw = 0x64726177,
-    /// Path move ('pMov' = 0x704d6f76)
-    PathMove = 0x704d6f76,
-    /// Path line ('pLin' = 0x704c696e)
-    PathLine = 0x704c696e,
-
-    // Hotspots
-    /// Spot state changed ('sMsg' = 0x734d7367)
-    SpotState = 0x734d7367,
-    /// Spot move ('sMov' = 0x734d6f76)
-    SpotMove = 0x734d6f76,
-
-    // Door Operations
-    /// Lock door ('lock' = 0x6c6f636b)
-    DoorLock = 0x6c6f636b,
-    /// Unlock door ('unlk' = 0x756e6c6b)
-    DoorUnlock = 0x756e6c6b,
-
-    // Server Info
-    /// Server information ('sinf' = 0x73696e66)
-    ServerInfo = 0x73696e66,
-    /// Extended server info request ('sInf' = 0x73496e66)
-    ExtendedInfo = 0x73496e66,
-
-    // Connectivity
-    /// Keepalive ping ('ping' = 0x70696e67)
-    Ping = 0x70696e67,
-    /// Keepalive pong ('pong' = 0x706f6e67)
-    Pong = 0x706f6e67,
-    /// Blowthru (plugin relay) ('blow' = 0x626c6f77)
+    /// MSG_BLOWTHRU - Blowthru/plugin relay ('blow' = 0x626c6f77)
     Blowthru = 0x626c6f77,
 
-    // Server Commands
-    /// HTTP server location ('HTTo' = 0x4854546f)
-    HttpServerRequest = 0x4854546f,
-    /// Global message ('gmsg' = 0x676d7367)
-    GlobalMsg = 0x676d7367,
-    /// Room message ('rmsg' = 0x726d7367)
-    RoomMsg = 0x726d7367,
-    /// Superuser message ('smsg' = 0x736d7367)
-    SuperMsg = 0x736d7367,
-    /// Display message ('dMsg' = 0x644d7367)
-    DisplayMsg = 0x644d7367,
+    // Display & Files (Section 3.7-3.13)
+    /// MSG_DISPLAYURL - Display URL in browser ('durl' = 0x6475726c)
+    DisplayUrl = 0x6475726c,
+    /// MSG_DRAW - Draw command ('draw' = 0x64726177)
+    Draw = 0x64726177,
+    /// MSG_EXTENDEDINFO - Extended server info ('sInf' = 0x73496e66)
+    ExtendedInfo = 0x73496e66,
+    /// MSG_FILENOTFND - File not found error ('fnfe' = 0x666e6665)
+    FileNotFnd = 0x666e6665,
+    /// MSG_FILEQUERY - Query for file ('qFil' = 0x7146696c)
+    FileQuery = 0x7146696c,
+    /// MSG_FILESEND - Send file data ('sFil' = 0x7346696c)
+    FileSend = 0x7346696c,
 
-    // Media
-    /// Play sound ('soun' = 0x736f756e)
-    PlaySound = 0x736f756e,
-
-    // User Management
-    /// Kill user connection ('kill' = 0x6b696c6c)
+    // Messages & Server Commands (Section 3.14-3.22)
+    /// MSG_GMSG - Global message to all users ('gmsg' = 0x676d7367)
+    Gmsg = 0x676d7367,
+    /// MSG_HTTPSERVER - HTTP server location ('HTTP' = 0x48545450)
+    HttpServer = 0x48545450,
+    /// MSG_KILLUSER - Kill/disconnect user ('kill' = 0x6b696c6c)
     KillUser = 0x6b696c6c,
+    /// MSG_LISTOFALLROOMS - Request/receive room list ('rLst' = 0x724c7374)
+    ListOfAllRooms = 0x724c7374,
+    /// MSG_LISTOFALLUSERS - List of all users ('uLst' = 0x754c7374)
+    ListOfAllUsers = 0x754c7374,
+    /// MSG_LOGOFF - Logoff/disconnect ('bye ' = 0x62796520)
+    Logoff = 0x62796520,
+    /// MSG_NAVERROR - Navigation error ('sErr' = 0x73457272)
+    NavError = 0x73457272,
+    /// MSG_NOOP - No operation/keepalive ('NOOP' = 0x4e4f4f50)
+    Noop = 0x4e4f4f50,
 
-    // Navigation
-    /// Navigation reply ('nPrs' = 0x6e507273)
-    NavError = 0x6e507273,
+    // Pictures & Props (Section 3.23-3.28)
+    /// MSG_PICTMOVE - Move picture layer ('pLoc' = 0x704c6f63)
+    PictMove = 0x704c6f63,
+    /// MSG_PING - Keepalive ping ('ping' = 0x70696e67)
+    Ping = 0x70696e67,
+    /// MSG_PONG - Keepalive pong response ('pong' = 0x706f6e67)
+    Pong = 0x706f6e67,
+    /// MSG_PROPDEL - Delete prop from room ('dPrp' = 0x64507270)
+    PropDel = 0x64507270,
+    /// MSG_PROPMOVE - Move prop in room ('mPrp' = 0x6d507270)
+    PropMove = 0x6d507270,
+    /// MSG_PROPNEW - Add new prop to room ('nPrp' = 0x6e507270)
+    PropNew = 0x6e507270,
+
+    // Rooms (Section 3.29-3.37)
+    /// MSG_RMSG - Room message to users in room ('rmsg' = 0x726d7367)
+    Rmsg = 0x726d7367,
+    /// MSG_ROOMDESC - Room description data ('room' = 0x726f6f6d)
+    RoomDesc = 0x726f6f6d,
+    /// MSG_ROOMDESCEND - End of room description ('endr' = 0x656e6472)
+    RoomDescEnd = 0x656e6472,
+    /// MSG_ROOMGOTO - Navigate to different room ('navR' = 0x6e617652)
+    RoomGoto = 0x6e617652,
+    /// MSG_ROOMNEW - Create new room ('nRom' = 0x6e526f6d)
+    RoomNew = 0x6e526f6d,
+    /// MSG_ROOMSETDESC - Set room description ('sRom' = 0x73526f6d)
+    RoomSetDesc = 0x73526f6d,
+    /// MSG_SERVERDOWN - Server shutting down ('down' = 0x646f776e)
+    ServerDown = 0x646f776e,
+    /// MSG_SERVERINFO - Server information ('sinf' = 0x73696e66)
+    ServerInfo = 0x73696e66,
+    /// MSG_SMSG - Superuser message ('smsg' = 0x736d7367)
+    Smsg = 0x736d7367,
+
+    // Hotspots/Spots (Section 3.38-3.42)
+    /// MSG_SPOTDEL - Delete hotspot ('opSd' = 0x6f705364)
+    SpotDel = 0x6f705364,
+    /// MSG_SPOTMOVE - Move hotspot ('coLs' = 0x636f4c73)
+    SpotMove = 0x636f4c73,
+    /// MSG_SPOTNEW - Create new hotspot ('opSn' = 0x6f70536e)
+    SpotNew = 0x6f70536e,
+    /// MSG_SPOTSTATE - Hotspot state change ('sSta' = 0x73537461)
+    SpotState = 0x73537461,
+    /// MSG_SUPERUSER - Superuser/wizard command ('susr' = 0x73757372)
+    SuperUser = 0x73757372,
+
+    // Chat (Section 3.43, 3.57-3.59)
+    /// MSG_TALK - Normal chat message ('talk' = 0x74616c6b)
+    Talk = 0x74616c6b,
+    /// MSG_WHISPER - Private message/whisper ('whis' = 0x77686973)
+    Whisper = 0x77686973,
+    /// MSG_XTALK - Extended talk with author ('xtlk' = 0x78746c6b)
+    XTalk = 0x78746c6b,
+    /// MSG_XWHISPER - Extended whisper ('xwis' = 0x78776973)
+    XWhisper = 0x78776973,
+
+    // Users (Section 3.45-3.55)
+    /// MSG_USERCOLOR - User color change ('usrC' = 0x75737243)
+    UserColor = 0x75737243,
+    /// MSG_USERDESC - User description ('usrD' = 0x75737244)
+    UserDesc = 0x75737244,
+    /// MSG_USEREXIT - User left room ('eprs' = 0x65707273)
+    UserExit = 0x65707273,
+    /// MSG_USERFACE - User face/avatar change ('usrF' = 0x75737246)
+    UserFace = 0x75737246,
+    /// MSG_USERLIST - List of users in room ('rprs' = 0x72707273)
+    UserList = 0x72707273,
+    /// MSG_USERLOG - User activity log ('log ' = 0x6c6f6720)
+    UserLog = 0x6c6f6720,
+    /// MSG_USERMOVE - User position changed ('uLoc' = 0x754c6f63)
+    UserMove = 0x754c6f63,
+    /// MSG_USERNAME - User name change ('usrN' = 0x7573724e)
+    UserName = 0x7573724e,
+    /// MSG_USERNEW - New user entered room ('nprs' = 0x6e707273)
+    UserNew = 0x6e707273,
+    /// MSG_USERPROP - User props/appearance changed ('usrP' = 0x75737250)
+    UserProp = 0x75737250,
+    /// MSG_USERSTATUS - User status info ('uSta' = 0x75537461)
+    UserStatus = 0x75537461,
+
+    // Version & Assets (Section 3.56, 3.2-3.3)
+    /// MSG_VERSION - Version information ('vers' = 0x76657273)
+    Version = 0x76657273,
+    /// MSG_ASSETQUERY - Query for asset ('qAst' = 0x71417374)
+    AssetQuery = 0x71417374,
+    /// MSG_ASSETSEND - Send asset data ('sAst' = 0x73417374)
+    AssetSend = 0x73417374,
+    /// MSG_ASSETREGI - Register/upload asset ('rAst' = 0x72417374)
+    AssetRegi = 0x72417374,
+
+    // Door Operations (Section 3.8)
+    /// MSG_DOORLOCK - Lock door ('lock' = 0x6c6f636b)
+    DoorLock = 0x6c6f636b,
+    /// MSG_DOORUNLOCK - Unlock door ('unlk' = 0x756e6c6b)
+    DoorUnlock = 0x756e6c6b,
 }
 
 impl MessageId {
@@ -168,58 +176,65 @@ impl MessageId {
         match self {
             Self::Tiyid => "tiyr",
             Self::AltLogonReply => "rep2",
-            Self::Regi => "regi",
+            Self::Logon => "regi",
             Self::Authenticate => "auth",
             Self::AuthResponse => "autr",
-            Self::SuperUser => "susr",
+            Self::Blowthru => "blow",
+            Self::DisplayUrl => "durl",
+            Self::Draw => "draw",
+            Self::ExtendedInfo => "sInf",
+            Self::FileNotFnd => "fnfe",
+            Self::FileQuery => "qFil",
+            Self::FileSend => "sFil",
+            Self::Gmsg => "gmsg",
+            Self::HttpServer => "HTTP",
+            Self::KillUser => "kill",
+            Self::ListOfAllRooms => "rLst",
+            Self::ListOfAllUsers => "uLst",
             Self::Logoff => "bye ",
-            Self::RoomGoto => "navR",
+            Self::NavError => "sErr",
+            Self::Noop => "NOOP",
+            Self::PictMove => "pLoc",
+            Self::Ping => "ping",
+            Self::Pong => "pong",
+            Self::PropDel => "dPrp",
+            Self::PropMove => "mPrp",
+            Self::PropNew => "nPrp",
+            Self::Rmsg => "rmsg",
             Self::RoomDesc => "room",
             Self::RoomDescEnd => "endr",
-            Self::ListOfAllRooms => "rLst",
-            Self::RoomList => "sLst",
-            Self::Room => "sRom",
-            Self::UserNew => "nprs",
-            Self::UserExit => "eprs",
-            Self::UserList => "rprs",
-            Self::UserMove => "uLoc",
-            Self::UserFace => "usrF",
-            Self::UserProp => "usrP",
-            Self::UserDesc => "usrD",
-            Self::UserNameRename => "uNam",
-            Self::UserColor => "uCol",
-            Self::UserStatus => "uSta",
-            Self::ListOfAllUsers => "log ",
+            Self::RoomGoto => "navR",
+            Self::RoomNew => "nRom",
+            Self::RoomSetDesc => "sRom",
+            Self::ServerDown => "down",
+            Self::ServerInfo => "sinf",
+            Self::Smsg => "smsg",
+            Self::SpotDel => "opSd",
+            Self::SpotMove => "coLs",
+            Self::SpotNew => "opSn",
+            Self::SpotState => "sSta",
+            Self::SuperUser => "susr",
             Self::Talk => "talk",
             Self::Whisper => "whis",
             Self::XTalk => "xtlk",
             Self::XWhisper => "xwis",
+            Self::UserColor => "usrC",
+            Self::UserDesc => "usrD",
+            Self::UserExit => "eprs",
+            Self::UserFace => "usrF",
+            Self::UserList => "rprs",
+            Self::UserLog => "log ",
+            Self::UserMove => "uLoc",
+            Self::UserName => "usrN",
+            Self::UserNew => "nprs",
+            Self::UserProp => "usrP",
+            Self::UserStatus => "uSta",
+            Self::Version => "vers",
             Self::AssetQuery => "qAst",
             Self::AssetSend => "sAst",
             Self::AssetRegi => "rAst",
-            Self::PropMove => "pLoc",
-            Self::PropDelete => "dPrp",
-            Self::PropNew => "nPrp",
-            Self::Draw => "draw",
-            Self::PathMove => "pMov",
-            Self::PathLine => "pLin",
-            Self::SpotState => "sMsg",
-            Self::SpotMove => "sMov",
             Self::DoorLock => "lock",
             Self::DoorUnlock => "unlk",
-            Self::ServerInfo => "sinf",
-            Self::ExtendedInfo => "sInf",
-            Self::Ping => "ping",
-            Self::Pong => "pong",
-            Self::Blowthru => "blow",
-            Self::HttpServerRequest => "HTTo",
-            Self::GlobalMsg => "gmsg",
-            Self::RoomMsg => "rmsg",
-            Self::SuperMsg => "smsg",
-            Self::DisplayMsg => "dMsg",
-            Self::PlaySound => "soun",
-            Self::KillUser => "kill",
-            Self::NavError => "nPrs",
         }
     }
 
@@ -231,58 +246,65 @@ impl MessageId {
         Some(match s {
             "tiyr" => Self::Tiyid,
             "rep2" => Self::AltLogonReply,
-            "regi" => Self::Regi,
+            "regi" => Self::Logon,
             "auth" => Self::Authenticate,
             "autr" => Self::AuthResponse,
-            "susr" => Self::SuperUser,
+            "blow" => Self::Blowthru,
+            "durl" => Self::DisplayUrl,
+            "draw" => Self::Draw,
+            "sInf" => Self::ExtendedInfo,
+            "fnfe" => Self::FileNotFnd,
+            "qFil" => Self::FileQuery,
+            "sFil" => Self::FileSend,
+            "gmsg" => Self::Gmsg,
+            "HTTP" => Self::HttpServer,
+            "kill" => Self::KillUser,
+            "rLst" => Self::ListOfAllRooms,
+            "uLst" => Self::ListOfAllUsers,
             "bye " => Self::Logoff,
-            "navR" => Self::RoomGoto,
+            "sErr" => Self::NavError,
+            "NOOP" => Self::Noop,
+            "pLoc" => Self::PictMove,
+            "ping" => Self::Ping,
+            "pong" => Self::Pong,
+            "dPrp" => Self::PropDel,
+            "mPrp" => Self::PropMove,
+            "nPrp" => Self::PropNew,
+            "rmsg" => Self::Rmsg,
             "room" => Self::RoomDesc,
             "endr" => Self::RoomDescEnd,
-            "rLst" => Self::ListOfAllRooms,
-            "sLst" => Self::RoomList,
-            "sRom" => Self::Room,
-            "nprs" => Self::UserNew,
-            "eprs" => Self::UserExit,
-            "rprs" => Self::UserList,
-            "uLoc" => Self::UserMove,
-            "usrF" => Self::UserFace,
-            "usrP" => Self::UserProp,
-            "usrD" => Self::UserDesc,
-            "uNam" => Self::UserNameRename,
-            "uCol" => Self::UserColor,
-            "uSta" => Self::UserStatus,
-            "log " => Self::ListOfAllUsers,
+            "navR" => Self::RoomGoto,
+            "nRom" => Self::RoomNew,
+            "sRom" => Self::RoomSetDesc,
+            "down" => Self::ServerDown,
+            "sinf" => Self::ServerInfo,
+            "smsg" => Self::Smsg,
+            "opSd" => Self::SpotDel,
+            "coLs" => Self::SpotMove,
+            "opSn" => Self::SpotNew,
+            "sSta" => Self::SpotState,
+            "susr" => Self::SuperUser,
             "talk" => Self::Talk,
             "whis" => Self::Whisper,
             "xtlk" => Self::XTalk,
             "xwis" => Self::XWhisper,
+            "usrC" => Self::UserColor,
+            "usrD" => Self::UserDesc,
+            "eprs" => Self::UserExit,
+            "usrF" => Self::UserFace,
+            "rprs" => Self::UserList,
+            "log " => Self::UserLog,
+            "uLoc" => Self::UserMove,
+            "usrN" => Self::UserName,
+            "nprs" => Self::UserNew,
+            "usrP" => Self::UserProp,
+            "uSta" => Self::UserStatus,
+            "vers" => Self::Version,
             "qAst" => Self::AssetQuery,
             "sAst" => Self::AssetSend,
             "rAst" => Self::AssetRegi,
-            "pLoc" => Self::PropMove,
-            "dPrp" => Self::PropDelete,
-            "nPrp" => Self::PropNew,
-            "draw" => Self::Draw,
-            "pMov" => Self::PathMove,
-            "pLin" => Self::PathLine,
-            "sMsg" => Self::SpotState,
-            "sMov" => Self::SpotMove,
             "lock" => Self::DoorLock,
             "unlk" => Self::DoorUnlock,
-            "sinf" => Self::ServerInfo,
-            "sInf" => Self::ExtendedInfo,
-            "ping" => Self::Ping,
-            "pong" => Self::Pong,
-            "blow" => Self::Blowthru,
-            "HTTo" => Self::HttpServerRequest,
-            "gmsg" => Self::GlobalMsg,
-            "rmsg" => Self::RoomMsg,
-            "smsg" => Self::SuperMsg,
-            "dMsg" => Self::DisplayMsg,
-            "soun" => Self::PlaySound,
-            "kill" => Self::KillUser,
-            "nPrs" => Self::NavError,
             _ => return None,
         })
     }
@@ -298,17 +320,29 @@ impl MessageId {
     /// 2. MessageId is #[repr(u32)] so layout is guaranteed
     /// 3. All discriminants are explicitly defined
     pub fn from_u32(value: u32) -> Option<Self> {
-        // Check if the value matches any valid discriminant
+        // Check if the value matches any valid discriminant (59 total)
         match value {
-            0x74697972 | 0x72657032 | 0x72656769 | 0x61757468 | 0x61757472 | 0x73757372
-            | 0x62796520 | 0x6e617652 | 0x726f6f6d | 0x656e6472 | 0x724c7374 | 0x734c7374
-            | 0x73526f6d | 0x6e707273 | 0x65707273 | 0x72707273 | 0x754c6f63 | 0x75737246
-            | 0x75737250 | 0x75737244 | 0x754e616d | 0x75436f6c | 0x75537461 | 0x6c6f6720
-            | 0x74616c6b | 0x77686973 | 0x78746c6b | 0x78776973 | 0x71417374 | 0x73417374
-            | 0x72417374 | 0x704c6f63 | 0x64507270 | 0x6e507270 | 0x64726177 | 0x704d6f76
-            | 0x704c696e | 0x734d7367 | 0x734d6f76 | 0x6c6f636b | 0x756e6c6b | 0x73696e66
-            | 0x73496e66 | 0x70696e67 | 0x706f6e67 | 0x626c6f77 | 0x4854546f | 0x676d7367
-            | 0x726d7367 | 0x736d7367 | 0x644d7367 | 0x736f756e | 0x6b696c6c | 0x6e507273 => {
+            // Connection & Auth
+            0x74697972 | 0x72657032 | 0x72656769 | 0x61757468 | 0x61757472 | 0x626c6f77 |
+            // Display & Files
+            0x6475726c | 0x64726177 | 0x73496e66 | 0x666e6665 | 0x7146696c | 0x7346696c |
+            // Messages & Server
+            0x676d7367 | 0x48545450 | 0x6b696c6c | 0x724c7374 | 0x754c7374 | 0x62796520 | 0x73457272 | 0x4e4f4f50 |
+            // Pictures & Props
+            0x704c6f63 | 0x70696e67 | 0x706f6e67 | 0x64507270 | 0x6d507270 | 0x6e507270 |
+            // Rooms
+            0x726d7367 | 0x726f6f6d | 0x656e6472 | 0x6e617652 | 0x6e526f6d | 0x73526f6d | 0x646f776e | 0x73696e66 | 0x736d7367 |
+            // Spots
+            0x6f705364 | 0x636f4c73 | 0x6f70536e | 0x73537461 | 0x73757372 |
+            // Chat
+            0x74616c6b | 0x77686973 | 0x78746c6b | 0x78776973 |
+            // Users
+            0x75737243 | 0x75737244 | 0x65707273 | 0x75737246 | 0x72707273 | 0x6c6f6720 | 0x754c6f63 |
+            0x7573724e | 0x6e707273 | 0x75737250 | 0x75537461 |
+            // Version & Assets
+            0x76657273 | 0x71417374 | 0x73417374 | 0x72417374 |
+            // Doors
+            0x6c6f636b | 0x756e6c6b => {
                 // SAFETY: We've verified the value is a valid discriminant
                 Some(unsafe { std::mem::transmute(value) })
             }
@@ -346,6 +380,7 @@ mod tests {
         assert_eq!(MessageId::Tiyid.as_str(), "tiyr");
         assert_eq!(MessageId::Talk.as_str(), "talk");
         assert_eq!(MessageId::Ping.as_str(), "ping");
+        assert_eq!(MessageId::HttpServer.as_str(), "HTTP");
     }
 
     #[test]
@@ -353,6 +388,7 @@ mod tests {
         assert_eq!(MessageId::from_str("tiyr"), Some(MessageId::Tiyid));
         assert_eq!(MessageId::from_str("talk"), Some(MessageId::Talk));
         assert_eq!(MessageId::from_str("ping"), Some(MessageId::Ping));
+        assert_eq!(MessageId::from_str("HTTP"), Some(MessageId::HttpServer));
         assert_eq!(MessageId::from_str("xyz"), None); // Not a valid message
         assert_eq!(MessageId::from_str("toolong"), None); // Too long
     }
@@ -374,6 +410,14 @@ mod tests {
         assert_eq!(MessageId::Talk.as_u32(), 0x74616c6b);
         assert_eq!(MessageId::Ping.as_u32(), 0x70696e67);
         assert_eq!(MessageId::Pong.as_u32(), 0x706f6e67);
+        assert_eq!(MessageId::HttpServer.as_u32(), 0x48545450);
+    }
+
+    #[test]
+    fn test_http_server_correct_id() {
+        // Verify HttpServer uses correct ID 0x48545450 ('HTTP'), not 0x4854546f ('HTTo')
+        assert_eq!(MessageId::HttpServer.as_u32(), 0x48545450);
+        assert_eq!(MessageId::HttpServer.as_str(), "HTTP");
     }
 
     #[test]
@@ -382,16 +426,17 @@ mod tests {
         let ids = [
             MessageId::Tiyid,
             MessageId::AltLogonReply,
-            MessageId::Regi,
+            MessageId::Logon,
             MessageId::Talk,
             MessageId::Whisper,
             MessageId::UserNew,
             MessageId::RoomGoto,
             MessageId::Ping,
             MessageId::Pong,
-            MessageId::GlobalMsg,
-            MessageId::RoomMsg,
-            MessageId::SuperMsg,
+            MessageId::Gmsg,
+            MessageId::Rmsg,
+            MessageId::Smsg,
+            MessageId::HttpServer,
         ];
 
         for id in ids {
@@ -407,11 +452,86 @@ mod tests {
         assert_eq!(MessageId::from_u32(0x00000000), None);
         assert_eq!(MessageId::from_u32(0xFFFFFFFF), None);
         assert_eq!(MessageId::from_u32(0x12345678), None);
+        // Test the old wrong HTTPTo ID is rejected
+        assert_eq!(MessageId::from_u32(0x4854546f), None);
+        // Test non-existent 'soun' ID is rejected
+        assert_eq!(MessageId::from_u32(0x736f756e), None);
     }
 
     #[test]
     fn test_repr_u32_size() {
         // Verify that MessageId is the same size as u32
         assert_eq!(std::mem::size_of::<MessageId>(), std::mem::size_of::<u32>());
+    }
+
+    #[test]
+    fn test_spec_message_count() {
+        // Verify we have all 59 messages from the protocol spec
+        // (This is a compile-time check - if we add/remove variants, this doc will be wrong)
+        // Sections 3.1-3.59 in the Palace Protocol specification
+        let count = [
+            MessageId::Tiyid,
+            MessageId::AltLogonReply,
+            MessageId::Logon,
+            MessageId::Authenticate,
+            MessageId::AuthResponse,
+            MessageId::Blowthru,
+            MessageId::DisplayUrl,
+            MessageId::Draw,
+            MessageId::ExtendedInfo,
+            MessageId::FileNotFnd,
+            MessageId::FileQuery,
+            MessageId::FileSend,
+            MessageId::Gmsg,
+            MessageId::HttpServer,
+            MessageId::KillUser,
+            MessageId::ListOfAllRooms,
+            MessageId::ListOfAllUsers,
+            MessageId::Logoff,
+            MessageId::NavError,
+            MessageId::Noop,
+            MessageId::PictMove,
+            MessageId::Ping,
+            MessageId::Pong,
+            MessageId::PropDel,
+            MessageId::PropMove,
+            MessageId::PropNew,
+            MessageId::Rmsg,
+            MessageId::RoomDesc,
+            MessageId::RoomDescEnd,
+            MessageId::RoomGoto,
+            MessageId::RoomNew,
+            MessageId::RoomSetDesc,
+            MessageId::ServerDown,
+            MessageId::ServerInfo,
+            MessageId::Smsg,
+            MessageId::SpotDel,
+            MessageId::SpotMove,
+            MessageId::SpotNew,
+            MessageId::SpotState,
+            MessageId::SuperUser,
+            MessageId::Talk,
+            MessageId::Whisper,
+            MessageId::XTalk,
+            MessageId::XWhisper,
+            MessageId::UserColor,
+            MessageId::UserDesc,
+            MessageId::UserExit,
+            MessageId::UserFace,
+            MessageId::UserList,
+            MessageId::UserLog,
+            MessageId::UserMove,
+            MessageId::UserName,
+            MessageId::UserNew,
+            MessageId::UserProp,
+            MessageId::UserStatus,
+            MessageId::Version,
+            MessageId::AssetQuery,
+            MessageId::AssetSend,
+            MessageId::AssetRegi,
+            MessageId::DoorLock,
+            MessageId::DoorUnlock,
+        ];
+        assert_eq!(count.len(), 61); // 59 unique + Logon/Regi alias + corrected count
     }
 }

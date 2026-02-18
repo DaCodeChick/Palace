@@ -267,7 +267,7 @@ impl LogonMsg {
 
 impl MessagePayload for LogonMsg {
     fn message_id() -> MessageId {
-        MessageId::Regi
+        MessageId::Logon
     }
 
     fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
@@ -410,7 +410,7 @@ mod tests {
         // Test LogonMsg
         let logon = LogonMsg::guest("Alice", 5);
         let message = logon.to_message(0);
-        assert_eq!(message.msg_id, MessageId::Regi);
+        assert_eq!(message.msg_id, MessageId::Logon);
         assert_eq!(message.payload.len(), AuxRegistrationRec::SIZE);
 
         // Parse it back

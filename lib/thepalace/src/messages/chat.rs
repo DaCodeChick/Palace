@@ -245,7 +245,7 @@ impl GmsgMsg {
 
 impl MessagePayload for GmsgMsg {
     fn message_id() -> MessageId {
-        MessageId::GlobalMsg
+        MessageId::Gmsg
     }
 
     fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
@@ -282,7 +282,7 @@ impl RmsgMsg {
 
 impl MessagePayload for RmsgMsg {
     fn message_id() -> MessageId {
-        MessageId::RoomMsg
+        MessageId::Rmsg
     }
 
     fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
@@ -317,7 +317,7 @@ impl SmsgMsg {
 
 impl MessagePayload for SmsgMsg {
     fn message_id() -> MessageId {
-        MessageId::SuperMsg
+        MessageId::Smsg
     }
 
     fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
