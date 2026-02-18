@@ -168,7 +168,7 @@ fn macroman_to_string(bytes: &[u8]) -> String {
 ///
 /// Codes 0-127 are identical to ASCII.
 /// Codes 128-255 use the MacRoman character mapping.
-fn macroman_to_char(byte: u8) -> char {
+const fn macroman_to_char(byte: u8) -> char {
     match byte {
         // 0-127: Standard ASCII
         0..=127 => byte as char,

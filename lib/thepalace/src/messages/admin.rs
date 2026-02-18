@@ -56,7 +56,7 @@ pub struct KillUserMsg {
 
 impl KillUserMsg {
     /// Create a new KillUserMsg
-    pub fn new(target_id: i32) -> Self {
+    pub const fn new(target_id: i32) -> Self {
         Self { target_id }
     }
 }
@@ -141,10 +141,11 @@ impl ServerDownReason {
             _ => None,
         }
     }
+}
 
-    /// Convert to i32 refNum value
-    pub const fn as_i32(self) -> i32 {
-        self as i32
+impl From<ServerDownReason> for i32 {
+    fn from(reason: ServerDownReason) -> i32 {
+        reason as i32
     }
 }
 
@@ -236,9 +237,9 @@ mod tests {
 
     #[test]
     fn test_server_down_reason_conversions() {
-        assert_eq!(ServerDownReason::LoggedOff.as_i32(), 1);
-        assert_eq!(ServerDownReason::ServerDown.as_i32(), 5);
-        assert_eq!(ServerDownReason::Verbose.as_i32(), 16);
+        assert_eq!(i32::from(ServerDownReason::LoggedOff), 1);
+        assert_eq!(i32::from(ServerDownReason::ServerDown), 5);
+        assert_eq!(i32::from(ServerDownReason::Verbose), 16);
 
         assert_eq!(
             ServerDownReason::from_i32(1),

@@ -49,7 +49,7 @@ impl HotspotType {
     }
 
     /// Check if this hotspot type is a door variant
-    pub fn is_door(&self) -> bool {
+    pub const fn is_door(&self) -> bool {
         matches!(
             self,
             HotspotType::Door | HotspotType::ShutableDoor | HotspotType::LockableDoor
