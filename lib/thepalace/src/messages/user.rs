@@ -1,14 +1,14 @@
 //! User message payloads
 //!
 //! This module implements message structures for user-related operations:
-//! - MSG_USERNEW: New user entering a room
-//! - MSG_USEREXIT: User leaving a room
-//! - MSG_USERMOVE: User moving to a new position
-//! - MSG_USERNAME: User changing their name
-//! - MSG_USERCOLOR: User changing their avatar color
-//! - MSG_USERFACE: User changing their face
-//! - MSG_USERPROP: User changing their props
-//! - MSG_USERDESC: Bulk user appearance change
+//! - MessageId::UserNew: New user entering a room
+//! - MessageId::UserExit: User leaving a room
+//! - MessageId::UserMove: User moving to a new position
+//! - MessageId::UserName: User changing their name
+//! - MessageId::UserColor: User changing their avatar color
+//! - MessageId::UserFace: User changing their face
+//! - MessageId::UserProp: User changing their props
+//! - MessageId::UserDesc: Bulk user appearance change
 
 use bytes::{Buf, BufMut};
 
@@ -18,7 +18,7 @@ use crate::{AssetSpec, Point, RoomID, UserID};
 
 /// UserRec - Complete user record structure
 ///
-/// This structure is used in MSG_USERNEW and MSG_USERLIST to describe
+/// This structure is used in MessageId::UserNew and MessageId::UserList to describe
 /// a user's complete appearance and state.
 ///
 /// Size: 124 bytes
@@ -112,7 +112,7 @@ impl UserRec {
     }
 }
 
-/// MSG_USERNEW - New user entering a room
+/// MessageId::UserNew - New user entering a room
 ///
 /// Sent from server to clients when a new user enters the room.
 /// Contains a complete UserRec describing the new user.
@@ -147,7 +147,7 @@ impl MessagePayload for UserNewMsg {
     }
 }
 
-/// MSG_USEREXIT - User leaving a room
+/// MessageId::UserExit - User leaving a room
 ///
 /// Sent from server to clients when a user leaves the room.
 /// The UserID is in the message header's refNum field, so the payload is empty.
@@ -178,7 +178,7 @@ impl MessagePayload for UserExitMsg {
     }
 }
 
-/// MSG_USERMOVE - User moving to a new position
+/// MessageId::UserMove - User moving to a new position
 ///
 /// Sent bidirectionally to update a user's position in the room.
 /// The UserID is in the message header's refNum field.
@@ -217,7 +217,7 @@ impl MessagePayload for UserMoveMsg {
     }
 }
 
-/// MSG_USERNAME - User changing their name
+/// MessageId::UserName - User changing their name
 ///
 /// Sent bidirectionally to change a user's name.
 /// The UserID is in the message header's refNum field.
@@ -252,7 +252,7 @@ impl MessagePayload for UserNameMsg {
     }
 }
 
-/// MSG_USERCOLOR - User changing their avatar color
+/// MessageId::UserColor - User changing their avatar color
 ///
 /// Sent bidirectionally to change a user's color (0-15).
 /// The UserID is in the message header's refNum field.
@@ -287,7 +287,7 @@ impl MessagePayload for UserColorMsg {
     }
 }
 
-/// MSG_USERFACE - User changing their face
+/// MessageId::UserFace - User changing their face
 ///
 /// Sent bidirectionally to change a user's face (0-15).
 /// The UserID is in the message header's refNum field.
@@ -322,7 +322,7 @@ impl MessagePayload for UserFaceMsg {
     }
 }
 
-/// MSG_USERPROP - User changing their props
+/// MessageId::UserProp - User changing their props
 ///
 /// Sent bidirectionally to change a user's props (0-9 props).
 /// The UserID is in the message header's refNum field.
@@ -365,7 +365,7 @@ impl MessagePayload for UserPropMsg {
     }
 }
 
-/// MSG_USERDESC - Bulk user appearance change
+/// MessageId::UserDesc - Bulk user appearance change
 ///
 /// Sent bidirectionally to change face, color, and props all at once.
 /// The UserID is in the message header's refNum field.

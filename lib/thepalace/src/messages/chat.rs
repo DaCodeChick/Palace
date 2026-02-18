@@ -1,13 +1,13 @@
 //! Chat message payloads
 //!
 //! This module implements message structures for chat operations:
-//! - MSG_TALK: Normal chat message to all users in room
-//! - MSG_XTALK: Encrypted chat message to all users in room
-//! - MSG_WHISPER: Private chat message to a specific user
-//! - MSG_XWHISPER: Encrypted private chat message to a specific user
-//! - MSG_GMSG: Global message (server-wide)
-//! - MSG_RMSG: Room message (flagged for superusers)
-//! - MSG_SMSG: Superuser message
+//! - MessageId::Talk: Normal chat message to all users in room
+//! - MessageId::XTalk: Encrypted chat message to all users in room
+//! - MessageId::Whisper: Private chat message to a specific user
+//! - MessageId::XWhisper: Encrypted private chat message to a specific user
+//! - MessageId::Gmsg: Global message (server-wide)
+//! - MessageId::Rmsg: Room message (flagged for superusers)
+//! - MessageId::Smsg: Superuser message
 
 use bytes::{Buf, BufMut};
 
@@ -15,7 +15,7 @@ use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::{MessageId, MessagePayload};
 use crate::UserID;
 
-/// MSG_TALK - Normal chat message
+/// MessageId::Talk - Normal chat message
 ///
 /// Sent bidirectionally for word balloon speech.
 /// The UserID of the speaker is in the message header's refNum field.
@@ -58,9 +58,9 @@ impl MessagePayload for TalkMsg {
     }
 }
 
-/// MSG_XTALK - Encrypted chat message
+/// MessageId::XTalk - Encrypted chat message
 ///
-/// Similar to MSG_TALK but text is encrypted to prevent sniffing.
+/// Similar to MessageId::Talk but text is encrypted to prevent sniffing.
 /// The encryption is a simple XOR cipher.
 ///
 /// Format:
@@ -120,7 +120,7 @@ impl MessagePayload for XTalkMsg {
     }
 }
 
-/// MSG_WHISPER - Private chat message (request form)
+/// MessageId::Whisper - Private chat message (request form)
 ///
 /// Client sends this to request a whisper to a specific user.
 /// Server relays it to the target user.
@@ -162,9 +162,9 @@ impl MessagePayload for WhisperMsg {
     }
 }
 
-/// MSG_XWHISPER - Encrypted private chat message (request form)
+/// MessageId::XWhisper - Encrypted private chat message (request form)
 ///
-/// Similar to MSG_WHISPER but with encrypted text.
+/// Similar to MessageId::Whisper but with encrypted text.
 ///
 /// Format (request):
 /// - target: UserID (4 bytes)
@@ -222,7 +222,7 @@ impl MessagePayload for XWhisperMsg {
     }
 }
 
-/// MSG_GMSG - Global message
+/// MessageId::Gmsg - Global message
 ///
 /// Sent from server to all connected users regardless of room.
 /// Text is a CString, limited to 255 characters.
@@ -257,10 +257,10 @@ impl MessagePayload for GmsgMsg {
     }
 }
 
-/// MSG_RMSG - Room message
+/// MessageId::Rmsg - Room message
 ///
-/// Similar to MSG_TALK but flagged for superuser attention.
-/// Sent to room users as MSG_TALK, plus special MSG_TALK to superusers.
+/// Similar to MessageId::Talk but flagged for superuser attention.
+/// Sent to room users as MessageId::Talk, plus special MessageId::Talk to superusers.
 ///
 /// Text is a CString, limited to 255 characters.
 #[derive(Debug, Clone, PartialEq)]
@@ -294,7 +294,7 @@ impl MessagePayload for RmsgMsg {
     }
 }
 
-/// MSG_SMSG - Superuser message
+/// MessageId::Smsg - Superuser message
 ///
 /// Message sent only to superusers (wizards/gods) in the room.
 /// Text is a CString, limited to 255 characters.

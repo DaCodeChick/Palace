@@ -1,9 +1,9 @@
 //! Admin and server management message payloads
 //!
 //! This module implements message structures for administrative operations:
-//! - MSG_SUPERUSER: Enter wizard/god mode with password
-//! - MSG_KILLUSER: Forcibly disconnect a user
-//! - MSG_SERVERDOWN: Server shutdown/disconnect notification
+//! - MessageId::SuperUser: Enter wizard/god mode with password
+//! - MessageId::KillUser: Forcibly disconnect a user
+//! - MessageId::ServerDown: Server shutdown/disconnect notification
 
 use bytes::{Buf, BufMut};
 
@@ -11,10 +11,10 @@ use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::{MessageId, MessagePayload};
 use crate::UserID;
 
-/// MSG_SUPERUSER - Request to enter superuser (wizard/god) mode
+/// MessageId::SuperUser - Request to enter superuser (wizard/god) mode
 ///
 /// Client sends password to server. If correct, server responds with
-/// MSG_USERSTATUS granting elevated privileges.
+/// MessageId::UserStatus granting elevated privileges.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SuperUserMsg {
     /// Password for wizard or god mode
@@ -46,7 +46,7 @@ impl MessagePayload for SuperUserMsg {
     }
 }
 
-/// MSG_KILLUSER - Request to forcibly disconnect a user
+/// MessageId::KillUser - Request to forcibly disconnect a user
 ///
 /// Client (with sufficient authority) sends this to kick a user off the server.
 #[derive(Debug, Clone, PartialEq)]
@@ -78,7 +78,7 @@ impl MessagePayload for KillUserMsg {
     }
 }
 
-/// Reason codes for MSG_SERVERDOWN
+/// Reason codes for MessageId::ServerDown
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
 pub enum ServerDownReason {
@@ -149,7 +149,7 @@ impl ServerDownReason {
     }
 }
 
-/// MSG_SERVERDOWN - Server disconnect notification
+/// MessageId::ServerDown - Server disconnect notification
 ///
 /// Server sends this to inform client that connection is being dropped.
 /// The reason is encoded in the Message's refNum field.

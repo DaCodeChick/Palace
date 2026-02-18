@@ -1,13 +1,13 @@
 //! Server message payloads
 //!
 //! This module implements message structures for server-related operations:
-//! - MSG_PING: Keepalive ping from server/client
-//! - MSG_PONG: Keepalive pong response
-//! - MSG_SERVERINFO: Server configuration and capabilities
-//! - MSG_EXTENDEDINFO: Extended server information
-//! - MSG_USERLIST: List of users in a room
-//! - MSG_LISTOFALLUSERS: Complete list of all users on server
-//! - MSG_USERLOG: Notification that a user logged on
+//! - MessageId::Ping: Keepalive ping from server/client
+//! - MessageId::Pong: Keepalive pong response
+//! - MessageId::ServerInfo: Server configuration and capabilities
+//! - MessageId::ExtendedInfo: Extended server information
+//! - MessageId::UserList: List of users in a room
+//! - MessageId::ListOfAllUsers: Complete list of all users on server
+//! - MessageId::UserLog: Notification that a user logged on
 
 use bytes::{Buf, BufMut};
 
@@ -18,10 +18,10 @@ use crate::UserID;
 
 use super::user::UserRec;
 
-/// MSG_PING - Keepalive ping message
+/// MessageId::Ping - Keepalive ping message
 ///
 /// Empty payload. The refNum field in the message header can carry
-/// an arbitrary value that will be echoed in the MSG_PONG response.
+/// an arbitrary value that will be echoed in the MessageId::Pong response.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct PingMsg;
 
@@ -37,10 +37,10 @@ impl MessagePayload for PingMsg {
     fn to_bytes(&self, _buf: &mut impl BufMut) {}
 }
 
-/// MSG_PONG - Keepalive pong response
+/// MessageId::Pong - Keepalive pong response
 ///
 /// Empty payload. The refNum field in the message header should echo
-/// the refNum from the corresponding MSG_PING message.
+/// the refNum from the corresponding MessageId::Ping message.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct PongMsg;
 
@@ -56,7 +56,7 @@ impl MessagePayload for PongMsg {
     fn to_bytes(&self, _buf: &mut impl BufMut) {}
 }
 
-/// MSG_SERVERINFO - Server configuration and capabilities
+/// MessageId::ServerInfo - Server configuration and capabilities
 ///
 /// Sent by server to client during logon to describe server characteristics.
 /// Size: 104 bytes (4 + 64 + 4 + 4 + 4 + variable padding)
@@ -123,7 +123,7 @@ impl MessagePayload for ServerInfoMsg {
     }
 }
 
-/// MSG_USERLIST - List of users in current room
+/// MessageId::UserList - List of users in current room
 ///
 /// Sent from server to client as part of room entry process.
 /// The refNum field contains the number of users in the room.
@@ -165,7 +165,7 @@ impl MessagePayload for UserListMsg {
     }
 }
 
-/// MSG_LISTOFALLUSERS - Complete list of all users on server
+/// MessageId::ListOfAllUsers - Complete list of all users on server
 ///
 /// Same format as UserListMsg but contains all users across all rooms.
 #[derive(Debug, Clone, PartialEq)]
@@ -206,7 +206,7 @@ impl MessagePayload for ListOfAllUsersMsg {
     }
 }
 
-/// MSG_USERLOG - User logged onto server notification
+/// MessageId::UserLog - User logged onto server notification
 ///
 /// Sent from server to clients when a new user logs onto the server.
 /// The refNum field contains the UserID of the user who logged on.

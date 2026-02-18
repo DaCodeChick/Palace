@@ -1,10 +1,10 @@
 //! Authentication message payloads
 //!
 //! This module implements the message structures for Palace authentication:
-//! - MSG_TIYID: First message to detect endianness
-//! - MSG_LOGON: Client login with registration info
-//! - MSG_AUTHENTICATE: Server authentication challenge
-//! - MSG_AUTHRESPONSE: Client authentication response
+//! - MessageId::Tiyid: First message to detect endianness
+//! - MessageId::Logon: Client login with registration info
+//! - MessageId::Authenticate: Server authentication challenge
+//! - MessageId::AuthResponse: Client authentication response
 
 use bytes::{Buf, BufMut};
 
@@ -15,7 +15,7 @@ use crate::messages::flags::{
 use crate::messages::{MessageId, MessagePayload};
 use crate::RoomID;
 
-/// MSG_TIYID - First message sent to detect endianness
+/// MessageId::Tiyid - First message sent to detect endianness
 ///
 /// This message is sent immediately upon connection. The receiver
 /// uses it to determine the sender's byte ordering (endianness).
@@ -54,7 +54,7 @@ impl MessagePayload for TiyidMsg {
 
 /// Auxiliary registration record containing user session info
 ///
-/// Used in MSG_LOGON and MSG_ALTLOGONREPLY messages
+/// Used in MessageId::Logon and MessageId::AltLogonReply messages
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuxRegistrationRec {
     /// Registration CRC checksum
@@ -223,7 +223,7 @@ impl AuxRegistrationRec {
     }
 }
 
-/// MSG_LOGON - Client login request
+/// MessageId::Logon - Client login request
 ///
 /// Sent by client to initiate a session with the server.
 /// Contains all the registration and capability information.
@@ -280,9 +280,9 @@ impl MessagePayload for LogonMsg {
     }
 }
 
-/// MSG_ALTLOGONREPLY - Alternative logon reply from server
+/// MessageId::AltLogonReply - Alternative logon reply from server
 ///
-/// Sent by server in response to MSG_LOGON when using
+/// Sent by server in response to MessageId::Logon when using
 /// alternative authentication.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AltLogonReplyMsg {

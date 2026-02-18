@@ -1,11 +1,11 @@
 //! Room message payloads
 //!
 //! This module implements message structures for room-related operations:
-//! - MSG_ROOMGOTO: Client requests to move to a different room
-//! - MSG_ROOMDESC: Server describes a room (complex structure with RoomRec)
-//! - MSG_ROOMDESCEND: Marks end of room description sequence
-//! - MSG_ROOMNEW: Create a new room
-//! - MSG_ROOMSETDESC: Update room description
+//! - MessageId::RoomGoto: Client requests to move to a different room
+//! - MessageId::RoomDesc: Server describes a room (complex structure with RoomRec)
+//! - MessageId::RoomDescEnd: Marks end of room description sequence
+//! - MessageId::RoomNew: Create a new room
+//! - MessageId::RoomSetDesc: Update room description
 //!
 //! RoomRec is a complex structure with variable-length data including hotspots,
 //! pictures, loose props, draw commands, and embedded strings.
@@ -422,17 +422,17 @@ impl RoomRec {
 // Room Messages
 // ============================================================================
 
-/// MSG_ROOMGOTO - Client requests to move to a different room
+/// MessageId::RoomGoto - Client requests to move to a different room
 ///
 /// Sent from client to server to request moving to a different room.
 /// If successful, server sends:
-/// - MSG_USEREXIT to users in old room
-/// - MSG_USERNEW to users in new room
-/// - MSG_ROOMDESC to the client (describing new room)
-/// - MSG_USERLIST to the client (users in new room)
-/// - MSG_ROOMDESCEND to the client (end of description)
+/// - MessageId::UserExit to users in old room
+/// - MessageId::UserNew to users in new room
+/// - MessageId::RoomDesc to the client (describing new room)
+/// - MessageId::UserList to the client (users in new room)
+/// - MessageId::RoomDescEND to the client (end of description)
 ///
-/// If unsuccessful, server sends MSG_NAVERROR.
+/// If unsuccessful, server sends MessageId::NavError.
 ///
 /// Format:
 /// - dest: RoomID (2 bytes, i16)
@@ -467,7 +467,7 @@ impl MessagePayload for RoomGotoMsg {
     }
 }
 
-/// MSG_ROOMDESCEND - Marks end of room description sequence
+/// MessageId::RoomDescEND - Marks end of room description sequence
 ///
 /// Sent from server to client to indicate that all room description
 /// messages have been sent and the client can now render the room.
@@ -500,15 +500,15 @@ impl MessagePayload for RoomDescEndMsg {
     }
 }
 
-/// MSG_ROOMDESC - Server describes a room to the client
+/// MessageId::RoomDesc - Server describes a room to the client
 ///
 /// This is one of the most complex messages in the Palace protocol.
 /// It contains complete room information including metadata, hotspots,
 /// pictures, loose props, and draw commands.
 ///
 /// Sent from server to client when:
-/// - User enters a new room (after MSG_ROOMGOTO)
-/// - Room description is updated (after MSG_ROOMSETDESC)
+/// - User enters a new room (after MessageId::RoomGoto)
+/// - Room description is updated (after MessageId::RoomSetDesc)
 ///
 /// The client should parse this message and render the room accordingly.
 ///
@@ -837,7 +837,7 @@ impl RoomListRec {
     }
 }
 
-/// MSG_LISTOFALLROOMS - Request/response for list of all rooms
+/// MessageId::ListOfAllRooms - Request/response for list of all rooms
 ///
 /// In request form (client→server): empty payload
 /// In response form (server→client): array of RoomListRec
@@ -890,7 +890,7 @@ impl MessagePayload for ListOfAllRoomsMsg {
     }
 }
 
-/// MSG_PROPDEL - Delete a prop from the room
+/// MessageId::PropDel - Delete a prop from the room
 ///
 /// propNum identifies the prop to delete (0-indexed in order added)
 /// propNum = -1 means delete all props in the room
@@ -928,7 +928,7 @@ impl MessagePayload for PropDelMsg {
     }
 }
 
-/// MSG_PROPMOVE - Move a prop to a new position
+/// MessageId::PropMove - Move a prop to a new position
 ///
 /// propNum identifies the prop to move (0-indexed in order added)
 #[derive(Debug, Clone, PartialEq)]
@@ -964,7 +964,7 @@ impl MessagePayload for PropMoveMsg {
     }
 }
 
-/// MSG_PROPNEW - Add a new prop to the room
+/// MessageId::PropNew - Add a new prop to the room
 #[derive(Debug, Clone, PartialEq)]
 pub struct PropNewMsg {
     /// Asset spec for the new prop
@@ -1090,7 +1090,7 @@ mod prop_tests {
 /// Hotspot ID type
 pub type HotspotID = i32;
 
-/// MSG_SPOTDEL - Delete a hotspot from the room
+/// MessageId::SpotDel - Delete a hotspot from the room
 ///
 /// Client requests server to delete a hotspot. If successful,
 /// server replaces the room with a new room lacking the hotspot.
@@ -1123,7 +1123,7 @@ impl MessagePayload for SpotDelMsg {
     }
 }
 
-/// MSG_SPOTMOVE - Move a hotspot to a new position
+/// MessageId::SpotMove - Move a hotspot to a new position
 ///
 /// Used to modify the screen location of a hotspot.
 #[derive(Debug, Clone, PartialEq)]
@@ -1167,7 +1167,7 @@ impl MessagePayload for SpotMoveMsg {
     }
 }
 
-/// MSG_SPOTNEW - Create a new hotspot in the room
+/// MessageId::SpotNew - Create a new hotspot in the room
 ///
 /// Client requests server to create a hotspot with default configuration.
 /// If successful, server replaces room with new room containing the hotspot.
@@ -1187,7 +1187,7 @@ impl MessagePayload for SpotNewMsg {
     fn to_bytes(&self, _buf: &mut impl BufMut) {}
 }
 
-/// MSG_SPOTSTATE - Change the state of a hotspot
+/// MessageId::SpotState - Change the state of a hotspot
 ///
 /// Used to modify the state field of a hotspot (for stateful hotspots).
 #[derive(Debug, Clone, PartialEq)]
@@ -1235,7 +1235,7 @@ impl MessagePayload for SpotStateMsg {
 // Door Operation Messages
 // ============================================================================
 
-/// MSG_DOORLOCK
+/// MessageId::DoorLock
 ///
 /// Client-to-server: Request to lock a door
 /// Server-to-clients: Notification that a door was locked
@@ -1274,7 +1274,7 @@ impl MessagePayload for DoorLockMsg {
     }
 }
 
-/// MSG_DOORUNLOCK
+/// MessageId::DoorUnlock
 ///
 /// Client-to-server: Request to unlock a door
 /// Server-to-clients: Notification that a door was unlocked
@@ -1317,7 +1317,7 @@ impl MessagePayload for DoorUnlockMsg {
 // Picture Operation Messages
 // ============================================================================
 
-/// MSG_PICTMOVE
+/// MessageId::PictMove
 ///
 /// Client-to-server: Request to move a picture layer
 /// Server-to-clients: Notification that a picture was moved

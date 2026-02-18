@@ -1,9 +1,9 @@
 //! Protocol and status message payloads
 //!
 //! This module implements message structures for protocol negotiation and status:
-//! - MSG_VERSION: Server version identification
-//! - MSG_USERSTATUS: User status flag updates
-//! - MSG_NAVERROR: Navigation error notifications
+//! - MessageId::Version: Server version identification
+//! - MessageId::UserStatus: User status flag updates
+//! - MessageId::NavError: Navigation error notifications
 
 use bytes::{Buf, BufMut};
 
@@ -13,7 +13,7 @@ use crate::messages::{MessageId, MessagePayload};
 // Version Message
 // ============================================================================
 
-/// MSG_VERSION
+/// MessageId::Version
 ///
 /// Server-to-client: Sent during logon to identify the server version
 ///
@@ -43,14 +43,14 @@ impl MessagePayload for VersionMsg {
 // User Status Message
 // ============================================================================
 
-/// MSG_USERSTATUS
+/// MessageId::UserStatus
 ///
 /// Server-to-client: Updates the client about the user's status
 ///
 /// The UserID is in the message's refNum field.
 ///
 /// Contains:
-/// - flags: Status bit flags (see UserFlags in MSG_LISTOFALLUSERS)
+/// - flags: Status bit flags (see UserFlags in MessageId::ListOfAllUsers)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UserStatusMsg {
     pub flags: i16,
@@ -124,7 +124,7 @@ impl NavErrorCode {
     }
 }
 
-/// MSG_NAVERROR
+/// MessageId::NavError
 ///
 /// Server-to-client: Informs the client about a navigation failure
 ///

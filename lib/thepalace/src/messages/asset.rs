@@ -1,9 +1,9 @@
 //! Asset message payloads
 //!
 //! This module implements message structures for asset-related operations:
-//! - MSG_ASSETQUERY: Request an asset from client or server
-//! - MSG_ASSETSEND: Send an asset from server to client
-//! - MSG_ASSETREGI: Send an asset from client to server (register)
+//! - MessageId::AssetQuery: Request an asset from client or server
+//! - MessageId::AssetSend: Send an asset from server to client
+//! - MessageId::AssetRegi: Send an asset from client to server (register)
 //!
 //! Assets can be transmitted in blocks for large files, though the original
 //! Palace server only supports single-block transfers.
@@ -14,7 +14,7 @@ use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::{MessageId, MessagePayload};
 use crate::{AssetSpec, AssetType};
 
-/// MSG_ASSETQUERY - Request an asset from the receiver
+/// MessageId::AssetQuery - Request an asset from the receiver
 ///
 /// The server uses this to request props from the client.
 /// The client uses this to request arbitrary assets from the server.
@@ -100,10 +100,10 @@ impl AssetDescriptor {
     }
 }
 
-/// MSG_ASSETSEND / MSG_ASSETREGI - Transmit an asset in blocks
+/// MessageId::AssetSend / MessageId::AssetRegi - Transmit an asset in blocks
 ///
-/// MSG_ASSETSEND: Server sends asset to client
-/// MSG_ASSETREGI: Client sends asset to server (register)
+/// MessageId::AssetSend: Server sends asset to client
+/// MessageId::AssetRegi: Client sends asset to server (register)
 ///
 /// Assets can be transmitted in multiple blocks, though the original Palace
 /// server only supports single-block transfers (one message per asset).
@@ -230,9 +230,9 @@ impl MessagePayload for AssetSendMsg {
     }
 }
 
-/// MSG_ASSETREGI - Register/send an asset from client to server
+/// MessageId::AssetRegi - Register/send an asset from client to server
 ///
-/// This message has the exact same format as MSG_ASSETSEND, but is
+/// This message has the exact same format as MessageId::AssetSend, but is
 /// used when the client is sending assets to the server instead of
 /// the server sending to the client.
 pub type AssetRegiMsg = AssetSendMsg;
