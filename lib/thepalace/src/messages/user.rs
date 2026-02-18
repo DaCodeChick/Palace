@@ -21,10 +21,10 @@ use crate::{AssetSpec, Point, RoomID, UserID};
 /// This structure is used in MessageId::UserNew and MessageId::UserList to describe
 /// a user's complete appearance and state.
 ///
-/// Size: 124 bytes
+/// Size: 142 bytes
 /// - userID: 4 bytes
 /// - roomPos: 4 bytes (2 x i16)
-/// - propSpec: 72 bytes (9 x 8 bytes)
+/// - propSpec: 90 bytes (9 x 10 bytes, including 2-byte padding per AssetSpec)
 /// - roomID: 2 bytes
 /// - faceNbr: 2 bytes
 /// - colorNbr: 2 bytes
@@ -47,8 +47,8 @@ pub struct UserRec {
 }
 
 impl UserRec {
-    /// Size of UserRec in bytes (always 124)
-    pub const SIZE: usize = 4 + 4 + (9 * 8) + 2 + 2 + 2 + 2 + 2 + 2 + 32;
+    /// Size of UserRec in bytes (always 142)
+    pub const SIZE: usize = 4 + 4 + (9 * 10) + 2 + 2 + 2 + 2 + 2 + 2 + 32;
 
     /// Parse a UserRec from bytes
     pub fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
@@ -106,9 +106,9 @@ impl UserRec {
         buf.put_str31(&self.name);
     }
 
-    /// Get the size in bytes (always 124)
+    /// Get the size in bytes (always 142)
     pub const fn size() -> usize {
-        4 + 4 + (9 * 8) + 2 + 2 + 2 + 2 + 2 + 2 + 32
+        4 + 4 + (9 * 10) + 2 + 2 + 2 + 2 + 2 + 2 + 32
     }
 }
 

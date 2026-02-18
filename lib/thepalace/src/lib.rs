@@ -128,7 +128,7 @@ impl Point {
 /// Wire format: 10 bytes
 /// - id: 4 bytes (i32, big-endian)
 /// - crc: 4 bytes (u32, big-endian)
-/// - reserved: 2 bytes (always 0)
+/// - padding: 2 bytes (always 0)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(C)]
 pub struct AssetSpec {
@@ -159,10 +159,13 @@ impl AssetSpec {
     #[allow(unused_imports)]
     pub fn from_bytes(buf: &mut impl bytes::Buf) -> std::io::Result<Self> {
         use bytes::Buf;
-        Ok(Self {
+        let spec = Self {
             id: buf.get_i32(),
             crc: buf.get_u32(),
-        })
+        };
+        // Skip 2 bytes of padding
+        let _ = buf.get_i16();
+        Ok(spec)
     }
 
     /// Serialize this AssetSpec to bytes
@@ -171,6 +174,8 @@ impl AssetSpec {
         use bytes::BufMut;
         buf.put_i32(self.id);
         buf.put_u32(self.crc);
+        // Write 2 bytes of zero padding
+        buf.put_i16(0);
     }
 }
 

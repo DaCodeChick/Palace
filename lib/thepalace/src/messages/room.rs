@@ -73,19 +73,19 @@ pub struct PictureRec {
     pub pic_name_ofst: i16,
     /// Transparent color value
     pub trans_color: i16,
-    /// Reserved for alignment (should be 0)
-    pub reserved: i16,
 }
 
 impl PictureRec {
     pub fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
-        Ok(Self {
+        let rec = Self {
             ref_con: buf.get_i32(),
             pic_id: buf.get_i16(),
             pic_name_ofst: buf.get_i16(),
             trans_color: buf.get_i16(),
-            reserved: buf.get_i16(),
-        })
+        };
+        // Skip 2 bytes of padding
+        let _ = buf.get_i16();
+        Ok(rec)
     }
 
     pub fn to_bytes(&self, buf: &mut impl BufMut) {
@@ -93,7 +93,8 @@ impl PictureRec {
         buf.put_i16(self.pic_id);
         buf.put_i16(self.pic_name_ofst);
         buf.put_i16(self.trans_color);
-        buf.put_i16(self.reserved);
+        // Write 2 bytes of zero padding
+        buf.put_i16(0);
     }
 }
 
@@ -143,8 +144,6 @@ pub struct Hotspot {
     pub name_ofst: i16,
     /// Offset into varBuf for script text (PString)
     pub script_text_ofst: i16,
-    /// Reserved for alignment
-    pub align_reserved: i16,
 }
 
 impl Hotspot {
@@ -167,7 +166,8 @@ impl Hotspot {
         let state_rec_ofst = buf.get_i16();
         let name_ofst = buf.get_i16();
         let script_text_ofst = buf.get_i16();
-        let align_reserved = buf.get_i16();
+        // Skip 2 bytes of padding
+        let _ = buf.get_i16();
 
         let hotspot_type = HotspotType::from_i16(type_raw).ok_or_else(|| {
             std::io::Error::new(
@@ -202,7 +202,6 @@ impl Hotspot {
             state_rec_ofst,
             name_ofst,
             script_text_ofst,
-            align_reserved,
         })
     }
 
@@ -225,7 +224,8 @@ impl Hotspot {
         buf.put_i16(self.state_rec_ofst);
         buf.put_i16(self.name_ofst);
         buf.put_i16(self.script_text_ofst);
-        buf.put_i16(self.align_reserved);
+        // Write 2 bytes of zero padding
+        buf.put_i16(0);
     }
 }
 
@@ -277,8 +277,6 @@ pub struct RoomRec {
     pub nbr_lprops: i16,
     /// Offset into varBuf for loose props array (4-byte aligned)
     pub first_lprop: i16,
-    /// Reserved for alignment (should be 0)
-    pub reserved: i16,
     /// Length of variable data buffer
     pub len_vars: i16,
     /// Variable-length data buffer
@@ -303,7 +301,8 @@ impl RoomRec {
         let nbr_people = buf.get_i16();
         let nbr_lprops = buf.get_i16();
         let first_lprop = buf.get_i16();
-        let reserved = buf.get_i16();
+        // Skip 2 bytes of padding
+        let _ = buf.get_i16();
         let len_vars = buf.get_i16();
 
         let room_flags = RoomFlags::from_bits_truncate(room_flags_raw as u16);
@@ -332,7 +331,6 @@ impl RoomRec {
             nbr_people,
             nbr_lprops,
             first_lprop,
-            reserved,
             len_vars,
             var_buf,
         })
@@ -355,7 +353,8 @@ impl RoomRec {
         buf.put_i16(self.nbr_people);
         buf.put_i16(self.nbr_lprops);
         buf.put_i16(self.first_lprop);
-        buf.put_i16(self.reserved);
+        // Write 2 bytes of zero padding
+        buf.put_i16(0);
         buf.put_i16(self.len_vars);
         buf.put_slice(&self.var_buf);
     }
@@ -541,7 +540,7 @@ mod tests {
         let mut buf = BytesMut::new();
         rec.to_bytes(&mut buf);
 
-        assert_eq!(buf.len(), 24); // 4 padding + 8 + 4 + 4 + 4
+        assert_eq!(buf.len(), 26); // 4 padding + 10 (AssetSpec with padding) + 4 + 4 + 4
 
         let mut reader = buf.freeze();
         let parsed = LPropRec::from_bytes(&mut reader).unwrap();
@@ -556,7 +555,6 @@ mod tests {
             pic_id: 100,
             pic_name_ofst: 10,
             trans_color: -1, // 0xFFFF as i16 = -1
-            reserved: 0,
         };
 
         let mut buf = BytesMut::new();
@@ -591,7 +589,6 @@ mod tests {
             state_rec_ofst: 0,
             name_ofst: 50,
             script_text_ofst: 150,
-            align_reserved: 0,
         };
 
         let mut buf = BytesMut::new();
@@ -630,7 +627,6 @@ mod tests {
             nbr_people: 0,
             nbr_lprops: 0,
             first_lprop: 0,
-            reserved: 0,
             len_vars: var_buf.len() as i16,
             var_buf: var_buf.freeze(),
         };
@@ -729,7 +725,6 @@ mod tests {
             nbr_people: 0,
             nbr_lprops: 0,
             first_lprop: 0,
-            reserved: 0,
             len_vars: 0,
             var_buf: Bytes::new(),
         };
@@ -1027,7 +1022,7 @@ mod prop_tests {
 
         let mut buf = vec![];
         msg.to_bytes(&mut buf);
-        assert_eq!(buf.len(), 12); // 8 (AssetSpec) + 4 (Point)
+        assert_eq!(buf.len(), 14); // 10 (AssetSpec with padding) + 4 (Point)
 
         let parsed = PropNewMsg::from_bytes(&mut &buf[..]).unwrap();
         assert_eq!(parsed.prop_spec.id, 42);

@@ -262,7 +262,7 @@ mod tests {
         let mut buf = BytesMut::new();
         msg.to_bytes(&mut buf);
 
-        assert_eq!(buf.len(), 4 + 8); // AssetType + AssetSpec
+        assert_eq!(buf.len(), 4 + 10); // AssetType + AssetSpec (with 2-byte padding)
 
         let mut reader = buf.freeze();
         let parsed = AssetQueryMsg::from_bytes(&mut reader).unwrap();
@@ -311,8 +311,8 @@ mod tests {
         let mut buf = BytesMut::new();
         msg.to_bytes(&mut buf);
 
-        // 4 (type) + 8 (spec) + 4 (block_size) + 4 (block_offset) + 2 (block_nbr) + 2 (nbr_blocks) + 40 (desc) + data.len()
-        let expected_size = 4 + 8 + 4 + 4 + 2 + 2 + 40 + data.len();
+        // 4 (type) + 10 (spec with padding) + 4 (block_size) + 4 (block_offset) + 2 (block_nbr) + 2 (nbr_blocks) + 40 (desc) + data.len()
+        let expected_size = 4 + 10 + 4 + 4 + 2 + 2 + 40 + data.len();
         assert_eq!(buf.len(), expected_size);
 
         let mut reader = buf.freeze();
@@ -344,9 +344,9 @@ mod tests {
         let mut buf = BytesMut::new();
         msg.to_bytes(&mut buf);
 
-        // 4 (type) + 8 (spec) + 4 (block_size) + 4 (block_offset) + 2 (block_nbr) + 2 (nbr_blocks) + data.len()
+        // 4 (type) + 10 (spec with padding) + 4 (block_size) + 4 (block_offset) + 2 (block_nbr) + 2 (nbr_blocks) + data.len()
         // No descriptor since block_nbr != 0
-        let expected_size = 4 + 8 + 4 + 4 + 2 + 2 + data.len();
+        let expected_size = 4 + 10 + 4 + 4 + 2 + 2 + data.len();
         assert_eq!(buf.len(), expected_size);
 
         let mut reader = buf.freeze();
