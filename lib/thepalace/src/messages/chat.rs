@@ -11,6 +11,7 @@
 
 use bytes::{Buf, BufMut};
 
+use crate::algo::crypt;
 use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::{MessageId, MessagePayload};
 
@@ -85,19 +86,32 @@ impl XTalkMsg {
     }
 
     /// Decrypt the text using the Palace XOR cipher
-    pub fn decrypt(&self) -> String {
-        // TODO: Implement proper decryption using crate::algo::crypt()
-        // For now, return a placeholder
-        String::from_utf8_lossy(&self.text).to_string()
+    pub fn decrypt(&self) -> Result<String, std::io::Error> {
+        let decrypted = crypt(&self.text, true).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Decryption failed: {}", e),
+            )
+        })?;
+
+        String::from_utf8(decrypted).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Invalid UTF-8 after decryption: {}", e),
+            )
+        })
     }
 
     /// Encrypt plaintext using the Palace XOR cipher
-    pub fn encrypt(plaintext: &str) -> Self {
-        // TODO: Implement proper encryption using crate::algo::crypt()
-        // For now, just store as-is
-        Self {
-            text: plaintext.as_bytes().to_vec(),
-        }
+    pub fn encrypt(plaintext: &str) -> Result<Self, std::io::Error> {
+        let encrypted = crypt(plaintext.as_bytes(), false).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Encryption failed: {}", e),
+            )
+        })?;
+
+        Ok(Self { text: encrypted })
     }
 }
 
@@ -192,18 +206,35 @@ impl XWhisperMsg {
     }
 
     /// Decrypt the text using the Palace XOR cipher
-    pub fn decrypt(&self) -> String {
-        // TODO: Implement proper decryption using crate::algo::crypt()
-        String::from_utf8_lossy(&self.text).to_string()
+    pub fn decrypt(&self) -> Result<String, std::io::Error> {
+        let decrypted = crypt(&self.text, true).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Decryption failed: {}", e),
+            )
+        })?;
+
+        String::from_utf8(decrypted).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Invalid UTF-8 after decryption: {}", e),
+            )
+        })
     }
 
     /// Encrypt plaintext using the Palace XOR cipher
-    pub fn encrypt(target: i32, plaintext: &str) -> Self {
-        // TODO: Implement proper encryption using crate::algo::crypt()
-        Self {
+    pub fn encrypt(target: i32, plaintext: &str) -> Result<Self, std::io::Error> {
+        let encrypted = crypt(plaintext.as_bytes(), false).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Encryption failed: {}", e),
+            )
+        })?;
+
+        Ok(Self {
             target,
-            text: plaintext.as_bytes().to_vec(),
-        }
+            text: encrypted,
+        })
     }
 }
 
@@ -383,11 +414,15 @@ mod tests {
 
     #[test]
     fn test_xtalk_encrypt() {
-        let encrypted = XTalkMsg::encrypt("Test");
-        assert_eq!(encrypted.text, b"Test"); // Currently just passes through
+        let plaintext = "Test";
+        let encrypted = XTalkMsg::encrypt(plaintext).unwrap();
 
-        let decrypted = encrypted.decrypt();
-        assert_eq!(decrypted, "Test");
+        // Text should be encrypted (different from plaintext)
+        assert_ne!(encrypted.text, plaintext.as_bytes());
+
+        // Decrypting should get back the original
+        let decrypted = encrypted.decrypt().unwrap();
+        assert_eq!(decrypted, plaintext);
     }
 
     #[test]
