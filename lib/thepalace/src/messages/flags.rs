@@ -92,7 +92,7 @@ bitflags! {
 
 impl PropFlags {
     /// Get the color format bits from the flags.
-    pub fn format(&self) -> PropFormat {
+    pub const fn format(&self) -> PropFormat {
         if self.contains(Self::FORMAT_32BIT) {
             PropFormat::Rgb32
         } else if self.contains(Self::FORMAT_S20BIT) {

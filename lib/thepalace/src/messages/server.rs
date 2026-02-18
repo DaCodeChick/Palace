@@ -217,7 +217,7 @@ pub struct UserLogMsg {
 
 impl UserLogMsg {
     /// Create a new UserLogMsg
-    pub fn new(nbr_users: i32) -> Self {
+    pub const fn new(nbr_users: i32) -> Self {
         Self { nbr_users }
     }
 }

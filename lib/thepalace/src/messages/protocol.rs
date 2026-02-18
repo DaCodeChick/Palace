@@ -58,7 +58,7 @@ pub struct UserStatusMsg {
 
 impl UserStatusMsg {
     /// Create a new UserStatusMsg
-    pub fn new(flags: i16) -> Self {
+    pub const fn new(flags: i16) -> Self {
         Self { flags }
     }
 }
@@ -117,10 +117,11 @@ impl NavErrorCode {
             _ => None,
         }
     }
+}
 
-    /// Convert to i32
-    pub fn to_i32(self) -> i32 {
-        self as i32
+impl From<NavErrorCode> for i32 {
+    fn from(code: NavErrorCode) -> i32 {
+        code as i32
     }
 }
 
@@ -198,11 +199,11 @@ mod tests {
         assert_eq!(NavErrorCode::from_i32(5), Some(NavErrorCode::PalaceFull));
         assert_eq!(NavErrorCode::from_i32(99), None);
 
-        assert_eq!(NavErrorCode::InternalError.to_i32(), 0);
-        assert_eq!(NavErrorCode::RoomUnknown.to_i32(), 1);
-        assert_eq!(NavErrorCode::RoomFull.to_i32(), 2);
-        assert_eq!(NavErrorCode::RoomClosed.to_i32(), 3);
-        assert_eq!(NavErrorCode::CantAuthor.to_i32(), 4);
-        assert_eq!(NavErrorCode::PalaceFull.to_i32(), 5);
+        assert_eq!(i32::from(NavErrorCode::InternalError), 0);
+        assert_eq!(i32::from(NavErrorCode::RoomUnknown), 1);
+        assert_eq!(i32::from(NavErrorCode::RoomFull), 2);
+        assert_eq!(i32::from(NavErrorCode::RoomClosed), 3);
+        assert_eq!(i32::from(NavErrorCode::CantAuthor), 4);
+        assert_eq!(i32::from(NavErrorCode::PalaceFull), 5);
     }
 }

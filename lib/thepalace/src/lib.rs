@@ -151,7 +151,7 @@ impl AssetSpec {
     }
 
     /// Check if CRC is "don't care" (0 means no verification)
-    pub fn crc_is_dont_care(&self) -> bool {
+    pub const fn crc_is_dont_care(&self) -> bool {
         self.crc == 0
     }
 
