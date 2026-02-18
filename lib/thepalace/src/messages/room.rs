@@ -21,39 +21,11 @@ use crate::{AssetSpec, Point, RoomID};
 // Room Record Structures
 // ============================================================================
 
-/// Linked list record - used internally in various structures.
-///
-/// This structure is only used internally in the Palace client and its
-/// contents are ignored when transmitted over the network.
-///
-/// Size: 4 bytes
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LLRec {
-    pub next_ofst: i16,
-    pub reserved: i16,
-}
-
-impl LLRec {
-    pub fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
-        Ok(Self {
-            next_ofst: buf.get_i16(),
-            reserved: buf.get_i16(),
-        })
-    }
-
-    pub fn to_bytes(&self, buf: &mut impl BufMut) {
-        buf.put_i16(self.next_ofst);
-        buf.put_i16(self.reserved);
-    }
-}
-
 /// Loose prop record - describes a prop in the room.
 ///
-/// Size: 24 bytes (4 + 8 + 4 + 4 + 4)
+/// Size: 24 bytes (4 padding + 8 + 4 + 4 + 4)
 #[derive(Debug, Clone, PartialEq)]
 pub struct LPropRec {
-    /// Linked list link (used internally, ignored over wire)
-    pub link: LLRec,
     /// Asset identifier for the prop
     pub prop_spec: AssetSpec,
     /// Prop behavior flags
@@ -66,8 +38,10 @@ pub struct LPropRec {
 
 impl LPropRec {
     pub fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        // Skip 4 bytes of padding (originally a linked list pointer for client use)
+        let _ = buf.get_i32();
+
         Ok(Self {
-            link: LLRec::from_bytes(buf)?,
             prop_spec: AssetSpec::from_bytes(buf)?,
             flags: buf.get_i32(),
             ref_con: buf.get_i32(),
@@ -76,7 +50,9 @@ impl LPropRec {
     }
 
     pub fn to_bytes(&self, buf: &mut impl BufMut) {
-        self.link.to_bytes(buf);
+        // Write 4 bytes of zero padding (originally a linked list pointer for client use)
+        buf.put_i32(0);
+
         self.prop_spec.to_bytes(buf);
         buf.put_i32(self.flags);
         buf.put_i32(self.ref_con);
@@ -551,30 +527,8 @@ mod tests {
     use bytes::BytesMut;
 
     #[test]
-    fn test_llrec_roundtrip() {
-        let rec = LLRec {
-            next_ofst: 100,
-            reserved: 0,
-        };
-
-        let mut buf = BytesMut::new();
-        rec.to_bytes(&mut buf);
-
-        assert_eq!(buf.len(), 4);
-
-        let mut reader = buf.freeze();
-        let parsed = LLRec::from_bytes(&mut reader).unwrap();
-
-        assert_eq!(parsed, rec);
-    }
-
-    #[test]
     fn test_lprop_rec_roundtrip() {
         let rec = LPropRec {
-            link: LLRec {
-                next_ofst: 0,
-                reserved: 0,
-            },
             prop_spec: AssetSpec {
                 id: 12345,
                 crc: 0xABCDEF01,
@@ -587,7 +541,7 @@ mod tests {
         let mut buf = BytesMut::new();
         rec.to_bytes(&mut buf);
 
-        assert_eq!(buf.len(), 24); // 4 + 8 + 4 + 4 + 4
+        assert_eq!(buf.len(), 24); // 4 padding + 8 + 4 + 4 + 4
 
         let mut reader = buf.freeze();
         let parsed = LPropRec::from_bytes(&mut reader).unwrap();
