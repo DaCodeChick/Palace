@@ -84,7 +84,7 @@ impl Point {
     }
 
     /// Add two points (vector addition)
-    pub fn add(&self, other: &Point) -> Self {
+    pub const fn add(&self, other: &Point) -> Self {
         Self {
             v: self.v.saturating_add(other.v),
             h: self.h.saturating_add(other.h),
@@ -92,7 +92,7 @@ impl Point {
     }
 
     /// Subtract two points (vector subtraction)
-    pub fn sub(&self, other: &Point) -> Self {
+    pub const fn sub(&self, other: &Point) -> Self {
         Self {
             v: self.v.saturating_sub(other.v),
             h: self.h.saturating_sub(other.h),
