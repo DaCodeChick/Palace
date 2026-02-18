@@ -77,12 +77,12 @@ impl ListOfAllRoomsMsg {
     }
 
     /// Check if this is a request (empty) or response (has rooms)
-    pub fn is_request(&self) -> bool {
+    pub const fn is_request(&self) -> bool {
         self.rooms.is_empty()
     }
 
     /// Number of rooms
-    pub fn count(&self) -> usize {
+    pub const fn count(&self) -> usize {
         self.rooms.len()
     }
 }

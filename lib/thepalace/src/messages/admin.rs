@@ -174,7 +174,7 @@ impl ServerDownMsg {
     }
 
     /// Check if this has a verbose reason
-    pub fn is_verbose(&self) -> bool {
+    pub const fn is_verbose(&self) -> bool {
         self.reason_text.is_some()
     }
 }
