@@ -119,12 +119,12 @@ pub struct PropDelMsg {
 
 impl PropDelMsg {
     /// Create a new PropDelMsg
-    pub fn new(prop_num: i32) -> Self {
+    pub const fn new(prop_num: i32) -> Self {
         Self { prop_num }
     }
 
     /// Create message to delete all props
-    pub fn delete_all() -> Self {
+    pub const fn delete_all() -> Self {
         Self { prop_num: -1 }
     }
 }
@@ -158,7 +158,7 @@ pub struct PropMoveMsg {
 
 impl PropMoveMsg {
     /// Create a new PropMoveMsg
-    pub fn new(prop_num: i32, pos: Point) -> Self {
+    pub const fn new(prop_num: i32, pos: Point) -> Self {
         Self { prop_num, pos }
     }
 }
@@ -192,7 +192,7 @@ pub struct PropNewMsg {
 
 impl PropNewMsg {
     /// Create a new PropNewMsg
-    pub fn new(prop_spec: AssetSpec, pos: Point) -> Self {
+    pub const fn new(prop_spec: AssetSpec, pos: Point) -> Self {
         Self { prop_spec, pos }
     }
 }

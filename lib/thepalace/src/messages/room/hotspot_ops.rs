@@ -23,7 +23,7 @@ pub struct SpotDelMsg {
 
 impl SpotDelMsg {
     /// Create a new SpotDelMsg
-    pub fn new(spot_id: i32) -> Self {
+    pub const fn new(spot_id: i32) -> Self {
         Self { spot_id }
     }
 }
@@ -59,7 +59,7 @@ pub struct SpotMoveMsg {
 
 impl SpotMoveMsg {
     /// Create a new SpotMoveMsg
-    pub fn new(room_id: i16, spot_id: i32, pos: Point) -> Self {
+    pub const fn new(room_id: i16, spot_id: i32, pos: Point) -> Self {
         Self {
             room_id,
             spot_id,
@@ -123,7 +123,7 @@ pub struct SpotStateMsg {
 
 impl SpotStateMsg {
     /// Create a new SpotStateMsg
-    pub fn new(room_id: i16, spot_id: i32, state: i16) -> Self {
+    pub const fn new(room_id: i16, spot_id: i32, state: i16) -> Self {
         Self {
             room_id,
             spot_id,

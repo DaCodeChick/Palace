@@ -24,7 +24,7 @@ pub struct DoorLockMsg {
 
 impl DoorLockMsg {
     /// Create a new DoorLockMsg
-    pub fn new(room_id: i16, door_id: i32) -> Self {
+    pub const fn new(room_id: i16, door_id: i32) -> Self {
         Self { room_id, door_id }
     }
 }
@@ -63,7 +63,7 @@ pub struct DoorUnlockMsg {
 
 impl DoorUnlockMsg {
     /// Create a new DoorUnlockMsg
-    pub fn new(room_id: i16, door_id: i32) -> Self {
+    pub const fn new(room_id: i16, door_id: i32) -> Self {
         Self { room_id, door_id }
     }
 }
