@@ -20,145 +20,145 @@ use std::fmt;
 #[repr(u32)]
 pub enum MessageId {
     // Connection & Authentication (Section 3.1-3.6)
-    /// MSG_TIYID - Client version identification ('tiyr' = 0x74697972)
+    /// Client version identification ('tiyr' = 0x74697972)
     Tiyid = 0x74697972,
-    /// MSG_ALTLOGONREPLY - Alternative logon reply ('rep2' = 0x72657032)
+    /// Alternative logon reply ('rep2' = 0x72657032)
     AltLogonReply = 0x72657032,
-    /// MSG_LOGON - User logon ('regi' = 0x72656769)
+    /// User logon ('regi' = 0x72656769)
     Logon = 0x72656769,
-    /// MSG_AUTHENTICATE - Authentication request ('auth' = 0x61757468)
+    /// Authentication request ('auth' = 0x61757468)
     Authenticate = 0x61757468,
-    /// MSG_AUTHRESPONSE - Authentication response ('autr' = 0x61757472)
+    /// Authentication response ('autr' = 0x61757472)
     AuthResponse = 0x61757472,
-    /// MSG_BLOWTHRU - Blowthru/plugin relay ('blow' = 0x626c6f77)
+    /// Blowthru/plugin relay ('blow' = 0x626c6f77)
     Blowthru = 0x626c6f77,
 
     // Display & Files (Section 3.7-3.13)
-    /// MSG_DISPLAYURL - Display URL in browser ('durl' = 0x6475726c)
+    /// Display URL in browser ('durl' = 0x6475726c)
     DisplayUrl = 0x6475726c,
-    /// MSG_DRAW - Draw command ('draw' = 0x64726177)
+    /// Draw command ('draw' = 0x64726177)
     Draw = 0x64726177,
-    /// MSG_EXTENDEDINFO - Extended server info ('sInf' = 0x73496e66)
+    /// Extended server info ('sInf' = 0x73496e66)
     ExtendedInfo = 0x73496e66,
-    /// MSG_FILENOTFND - File not found error ('fnfe' = 0x666e6665)
+    /// File not found error ('fnfe' = 0x666e6665)
     FileNotFnd = 0x666e6665,
-    /// MSG_FILEQUERY - Query for file ('qFil' = 0x7146696c)
+    /// Query for file ('qFil' = 0x7146696c)
     FileQuery = 0x7146696c,
-    /// MSG_FILESEND - Send file data ('sFil' = 0x7346696c)
+    /// Send file data ('sFil' = 0x7346696c)
     FileSend = 0x7346696c,
 
     // Messages & Server Commands (Section 3.14-3.22)
-    /// MSG_GMSG - Global message to all users ('gmsg' = 0x676d7367)
+    /// Global message to all users ('gmsg' = 0x676d7367)
     Gmsg = 0x676d7367,
-    /// MSG_HTTPSERVER - HTTP server location ('HTTP' = 0x48545450)
+    /// HTTP server location ('HTTP' = 0x48545450)
     HttpServer = 0x48545450,
-    /// MSG_KILLUSER - Kill/disconnect user ('kill' = 0x6b696c6c)
+    /// Kill/disconnect user ('kill' = 0x6b696c6c)
     KillUser = 0x6b696c6c,
-    /// MSG_LISTOFALLROOMS - Request/receive room list ('rLst' = 0x724c7374)
+    /// Request/receive room list ('rLst' = 0x724c7374)
     ListOfAllRooms = 0x724c7374,
-    /// MSG_LISTOFALLUSERS - List of all users ('uLst' = 0x754c7374)
+    /// List of all users ('uLst' = 0x754c7374)
     ListOfAllUsers = 0x754c7374,
-    /// MSG_LOGOFF - Logoff/disconnect ('bye ' = 0x62796520)
+    /// Logoff/disconnect ('bye ' = 0x62796520)
     Logoff = 0x62796520,
-    /// MSG_NAVERROR - Navigation error ('sErr' = 0x73457272)
+    /// Navigation error ('sErr' = 0x73457272)
     NavError = 0x73457272,
-    /// MSG_NOOP - No operation/keepalive ('NOOP' = 0x4e4f4f50)
+    /// No operation/keepalive ('NOOP' = 0x4e4f4f50)
     Noop = 0x4e4f4f50,
 
     // Pictures & Props (Section 3.23-3.28)
-    /// MSG_PICTMOVE - Move picture layer ('pLoc' = 0x704c6f63)
+    /// Move picture layer ('pLoc' = 0x704c6f63)
     PictMove = 0x704c6f63,
-    /// MSG_PING - Keepalive ping ('ping' = 0x70696e67)
+    /// Keepalive ping ('ping' = 0x70696e67)
     Ping = 0x70696e67,
-    /// MSG_PONG - Keepalive pong response ('pong' = 0x706f6e67)
+    /// Keepalive pong response ('pong' = 0x706f6e67)
     Pong = 0x706f6e67,
-    /// MSG_PROPDEL - Delete prop from room ('dPrp' = 0x64507270)
+    /// Delete prop from room ('dPrp' = 0x64507270)
     PropDel = 0x64507270,
-    /// MSG_PROPMOVE - Move prop in room ('mPrp' = 0x6d507270)
+    /// Move prop in room ('mPrp' = 0x6d507270)
     PropMove = 0x6d507270,
-    /// MSG_PROPNEW - Add new prop to room ('nPrp' = 0x6e507270)
+    /// Add new prop to room ('nPrp' = 0x6e507270)
     PropNew = 0x6e507270,
 
     // Rooms (Section 3.29-3.37)
-    /// MSG_RMSG - Room message to users in room ('rmsg' = 0x726d7367)
+    /// Room message to users in room ('rmsg' = 0x726d7367)
     Rmsg = 0x726d7367,
-    /// MSG_ROOMDESC - Room description data ('room' = 0x726f6f6d)
+    /// Room description data ('room' = 0x726f6f6d)
     RoomDesc = 0x726f6f6d,
-    /// MSG_ROOMDESCEND - End of room description ('endr' = 0x656e6472)
+    /// End of room description ('endr' = 0x656e6472)
     RoomDescEnd = 0x656e6472,
-    /// MSG_ROOMGOTO - Navigate to different room ('navR' = 0x6e617652)
+    /// Navigate to different room ('navR' = 0x6e617652)
     RoomGoto = 0x6e617652,
-    /// MSG_ROOMNEW - Create new room ('nRom' = 0x6e526f6d)
+    /// Create new room ('nRom' = 0x6e526f6d)
     RoomNew = 0x6e526f6d,
-    /// MSG_ROOMSETDESC - Set room description ('sRom' = 0x73526f6d)
+    /// Set room description ('sRom' = 0x73526f6d)
     RoomSetDesc = 0x73526f6d,
-    /// MSG_SERVERDOWN - Server shutting down ('down' = 0x646f776e)
+    /// Server shutting down ('down' = 0x646f776e)
     ServerDown = 0x646f776e,
-    /// MSG_SERVERINFO - Server information ('sinf' = 0x73696e66)
+    /// Server information ('sinf' = 0x73696e66)
     ServerInfo = 0x73696e66,
-    /// MSG_SMSG - Superuser message ('smsg' = 0x736d7367)
+    /// Superuser message ('smsg' = 0x736d7367)
     Smsg = 0x736d7367,
 
     // Hotspots/Spots (Section 3.38-3.42)
-    /// MSG_SPOTDEL - Delete hotspot ('opSd' = 0x6f705364)
+    /// Delete hotspot ('opSd' = 0x6f705364)
     SpotDel = 0x6f705364,
-    /// MSG_SPOTMOVE - Move hotspot ('coLs' = 0x636f4c73)
+    /// Move hotspot ('coLs' = 0x636f4c73)
     SpotMove = 0x636f4c73,
-    /// MSG_SPOTNEW - Create new hotspot ('opSn' = 0x6f70536e)
+    /// Create new hotspot ('opSn' = 0x6f70536e)
     SpotNew = 0x6f70536e,
-    /// MSG_SPOTSTATE - Hotspot state change ('sSta' = 0x73537461)
+    /// Hotspot state change ('sSta' = 0x73537461)
     SpotState = 0x73537461,
-    /// MSG_SUPERUSER - Superuser/wizard command ('susr' = 0x73757372)
+    /// Superuser/wizard command ('susr' = 0x73757372)
     SuperUser = 0x73757372,
 
     // Chat (Section 3.43, 3.57-3.59)
-    /// MSG_TALK - Normal chat message ('talk' = 0x74616c6b)
+    /// Normal chat message ('talk' = 0x74616c6b)
     Talk = 0x74616c6b,
-    /// MSG_WHISPER - Private message/whisper ('whis' = 0x77686973)
+    /// Private message/whisper ('whis' = 0x77686973)
     Whisper = 0x77686973,
-    /// MSG_XTALK - Extended talk with author ('xtlk' = 0x78746c6b)
+    /// Extended talk with author ('xtlk' = 0x78746c6b)
     XTalk = 0x78746c6b,
-    /// MSG_XWHISPER - Extended whisper ('xwis' = 0x78776973)
+    /// Extended whisper ('xwis' = 0x78776973)
     XWhisper = 0x78776973,
 
     // Users (Section 3.45-3.55)
-    /// MSG_USERCOLOR - User color change ('usrC' = 0x75737243)
+    /// User color change ('usrC' = 0x75737243)
     UserColor = 0x75737243,
-    /// MSG_USERDESC - User description ('usrD' = 0x75737244)
+    /// User description ('usrD' = 0x75737244)
     UserDesc = 0x75737244,
-    /// MSG_USEREXIT - User left room ('eprs' = 0x65707273)
+    /// User left room ('eprs' = 0x65707273)
     UserExit = 0x65707273,
-    /// MSG_USERFACE - User face/avatar change ('usrF' = 0x75737246)
+    /// User face/avatar change ('usrF' = 0x75737246)
     UserFace = 0x75737246,
-    /// MSG_USERLIST - List of users in room ('rprs' = 0x72707273)
+    /// List of users in room ('rprs' = 0x72707273)
     UserList = 0x72707273,
-    /// MSG_USERLOG - User activity log ('log ' = 0x6c6f6720)
+    /// User activity log ('log ' = 0x6c6f6720)
     UserLog = 0x6c6f6720,
-    /// MSG_USERMOVE - User position changed ('uLoc' = 0x754c6f63)
+    /// User position changed ('uLoc' = 0x754c6f63)
     UserMove = 0x754c6f63,
-    /// MSG_USERNAME - User name change ('usrN' = 0x7573724e)
+    /// User name change ('usrN' = 0x7573724e)
     UserName = 0x7573724e,
-    /// MSG_USERNEW - New user entered room ('nprs' = 0x6e707273)
+    /// New user entered room ('nprs' = 0x6e707273)
     UserNew = 0x6e707273,
-    /// MSG_USERPROP - User props/appearance changed ('usrP' = 0x75737250)
+    /// User props/appearance changed ('usrP' = 0x75737250)
     UserProp = 0x75737250,
-    /// MSG_USERSTATUS - User status info ('uSta' = 0x75537461)
+    /// User status info ('uSta' = 0x75537461)
     UserStatus = 0x75537461,
 
     // Version & Assets (Section 3.56, 3.2-3.3)
-    /// MSG_VERSION - Version information ('vers' = 0x76657273)
+    /// Version information ('vers' = 0x76657273)
     Version = 0x76657273,
-    /// MSG_ASSETQUERY - Query for asset ('qAst' = 0x71417374)
+    /// Query for asset ('qAst' = 0x71417374)
     AssetQuery = 0x71417374,
-    /// MSG_ASSETSEND - Send asset data ('sAst' = 0x73417374)
+    /// Send asset data ('sAst' = 0x73417374)
     AssetSend = 0x73417374,
-    /// MSG_ASSETREGI - Register/upload asset ('rAst' = 0x72417374)
+    /// Register/upload asset ('rAst' = 0x72417374)
     AssetRegi = 0x72417374,
 
     // Door Operations (Section 3.8)
-    /// MSG_DOORLOCK - Lock door ('lock' = 0x6c6f636b)
+    /// Lock door ('lock' = 0x6c6f636b)
     DoorLock = 0x6c6f636b,
-    /// MSG_DOORUNLOCK - Unlock door ('unlk' = 0x756e6c6b)
+    /// Unlock door ('unlk' = 0x756e6c6b)
     DoorUnlock = 0x756e6c6b,
 }
 
