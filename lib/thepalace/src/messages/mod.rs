@@ -16,6 +16,7 @@ pub mod chat;
 pub mod flags;
 pub mod message;
 pub mod message_id;
+pub mod protocol;
 pub mod room;
 pub mod server;
 pub mod user;
@@ -27,11 +28,12 @@ pub use chat::*;
 pub use flags::*;
 pub use message::{Message, MessagePayload};
 pub use message_id::MessageId;
+pub use protocol::*;
 pub use room::*;
 pub use server::*;
 pub use user::*;
 
 // TODO: Implement remaining message payload types
-// - Door operations (DOORLOCK, DOORUNLOCK)
-// - Protocol messages (VERSION, USERSTATUS, NAVERROR, AUTHENTICATE, AUTHRESPONSE)
+// - Protocol messages (AUTHENTICATE, AUTHRESPONSE)
 // - File/display operations (DISPLAYURL, DRAW, FILEQUERY, FILESEND, FILENOTFND, BLOWTHRU)
+// - Room creation (ROOMNEW)

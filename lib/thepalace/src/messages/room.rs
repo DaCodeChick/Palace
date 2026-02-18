@@ -1231,6 +1231,185 @@ impl MessagePayload for SpotStateMsg {
     }
 }
 
+// ============================================================================
+// Door Operation Messages
+// ============================================================================
+
+/// MSG_DOORLOCK
+///
+/// Client-to-server: Request to lock a door
+/// Server-to-clients: Notification that a door was locked
+///
+/// Contains:
+/// - room_id: RoomID of the room containing the door
+/// - door_id: HotspotID of the door hotspot
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DoorLockMsg {
+    pub room_id: RoomID,
+    pub door_id: HotspotID,
+}
+
+impl DoorLockMsg {
+    /// Create a new DoorLockMsg
+    pub fn new(room_id: RoomID, door_id: HotspotID) -> Self {
+        Self { room_id, door_id }
+    }
+}
+
+impl MessagePayload for DoorLockMsg {
+    fn message_id() -> MessageId {
+        MessageId::DoorLock
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Ok(Self {
+            room_id: buf.get_i16(),
+            door_id: buf.get_i32(),
+        })
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        buf.put_i16(self.room_id);
+        buf.put_i32(self.door_id);
+    }
+}
+
+/// MSG_DOORUNLOCK
+///
+/// Client-to-server: Request to unlock a door
+/// Server-to-clients: Notification that a door was unlocked
+///
+/// Contains:
+/// - room_id: RoomID of the room containing the door
+/// - door_id: HotspotID of the door hotspot
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DoorUnlockMsg {
+    pub room_id: RoomID,
+    pub door_id: HotspotID,
+}
+
+impl DoorUnlockMsg {
+    /// Create a new DoorUnlockMsg
+    pub fn new(room_id: RoomID, door_id: HotspotID) -> Self {
+        Self { room_id, door_id }
+    }
+}
+
+impl MessagePayload for DoorUnlockMsg {
+    fn message_id() -> MessageId {
+        MessageId::DoorUnlock
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Ok(Self {
+            room_id: buf.get_i16(),
+            door_id: buf.get_i32(),
+        })
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        buf.put_i16(self.room_id);
+        buf.put_i32(self.door_id);
+    }
+}
+
+// ============================================================================
+// Picture Operation Messages
+// ============================================================================
+
+/// MSG_PICTMOVE
+///
+/// Client-to-server: Request to move a picture layer
+/// Server-to-clients: Notification that a picture was moved
+///
+/// Contains:
+/// - room_id: RoomID of the room containing the picture
+/// - spot_id: HotspotID of the picture itself
+/// - pos: New position for the picture
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PictMoveMsg {
+    pub room_id: RoomID,
+    pub spot_id: HotspotID,
+    pub pos: Point,
+}
+
+impl PictMoveMsg {
+    /// Create a new PictMoveMsg
+    pub fn new(room_id: RoomID, spot_id: HotspotID, pos: Point) -> Self {
+        Self {
+            room_id,
+            spot_id,
+            pos,
+        }
+    }
+}
+
+impl MessagePayload for PictMoveMsg {
+    fn message_id() -> MessageId {
+        MessageId::PictMove
+    }
+
+    fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
+        Ok(Self {
+            room_id: buf.get_i16(),
+            spot_id: buf.get_i32(),
+            pos: Point::from_bytes(buf)?,
+        })
+    }
+
+    fn to_bytes(&self, buf: &mut impl BufMut) {
+        buf.put_i16(self.room_id);
+        buf.put_i32(self.spot_id);
+        self.pos.to_bytes(buf);
+    }
+}
+
+#[cfg(test)]
+mod door_picture_tests {
+    use super::*;
+
+    #[test]
+    fn test_door_lock_msg() {
+        let msg = DoorLockMsg::new(10, 42);
+
+        let mut buf = vec![];
+        msg.to_bytes(&mut buf);
+        assert_eq!(buf.len(), 6); // 2 + 4
+
+        let parsed = DoorLockMsg::from_bytes(&mut &buf[..]).unwrap();
+        assert_eq!(parsed.room_id, 10);
+        assert_eq!(parsed.door_id, 42);
+    }
+
+    #[test]
+    fn test_door_unlock_msg() {
+        let msg = DoorUnlockMsg::new(15, 88);
+
+        let mut buf = vec![];
+        msg.to_bytes(&mut buf);
+        assert_eq!(buf.len(), 6); // 2 + 4
+
+        let parsed = DoorUnlockMsg::from_bytes(&mut &buf[..]).unwrap();
+        assert_eq!(parsed.room_id, 15);
+        assert_eq!(parsed.door_id, 88);
+    }
+
+    #[test]
+    fn test_pict_move_msg() {
+        let msg = PictMoveMsg::new(20, 100, Point { h: 300, v: 400 });
+
+        let mut buf = vec![];
+        msg.to_bytes(&mut buf);
+        assert_eq!(buf.len(), 10); // 2 + 4 + 4
+
+        let parsed = PictMoveMsg::from_bytes(&mut &buf[..]).unwrap();
+        assert_eq!(parsed.room_id, 20);
+        assert_eq!(parsed.spot_id, 100);
+        assert_eq!(parsed.pos.h, 300);
+        assert_eq!(parsed.pos.v, 400);
+    }
+}
+
 #[cfg(test)]
 mod hotspot_tests {
     use super::*;
