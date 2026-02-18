@@ -179,20 +179,111 @@ pub trait BufMutExt: BufMut {
     ///
     /// Format: 1 byte length prefix followed by the string bytes.
     ///
+    /// # Errors
+    ///
+    /// Returns `InvalidInput` if the string is longer than 255 bytes (PString maximum).
+    fn try_put_pstring(&mut self, s: &str) -> io::Result<()> {
+        let bytes = s.as_bytes();
+        if bytes.len() > 255 {
+            return Err(io::Error::new(
+                ErrorKind::InvalidInput,
+                format!("PString too long: {} bytes (max 255)", bytes.len()),
+            ));
+        }
+
+        self.put_u8(bytes.len() as u8);
+        self.put_slice(bytes);
+        Ok(())
+    }
+
+    /// Write a Str31 (Pascal string with max length 31) to the buffer.
+    ///
+    /// Writes a fixed 32-byte field: 1 length byte + up to 31 chars + padding.
+    ///
+    /// # Errors
+    ///
+    /// Returns `InvalidInput` if the string is longer than 31 bytes.
+    fn try_put_str31(&mut self, s: &str) -> io::Result<()> {
+        let bytes = s.as_bytes();
+        if bytes.len() > 31 {
+            return Err(io::Error::new(
+                ErrorKind::InvalidInput,
+                format!("Str31 too long: {} bytes (max 31)", bytes.len()),
+            ));
+        }
+
+        self.put_u8(bytes.len() as u8);
+        self.put_slice(bytes);
+        // Pad to 32 bytes total (1 len + 31 max chars)
+        let padding = 31 - bytes.len();
+        for _ in 0..padding {
+            self.put_u8(0);
+        }
+        Ok(())
+    }
+
+    /// Write a Str63 (Pascal string with max length 63) to the buffer.
+    ///
+    /// Writes a fixed 64-byte field: 1 length byte + up to 63 chars + padding.
+    ///
+    /// # Errors
+    ///
+    /// Returns `InvalidInput` if the string is longer than 63 bytes.
+    fn try_put_str63(&mut self, s: &str) -> io::Result<()> {
+        let bytes = s.as_bytes();
+        if bytes.len() > 63 {
+            return Err(io::Error::new(
+                ErrorKind::InvalidInput,
+                format!("Str63 too long: {} bytes (max 63)", bytes.len()),
+            ));
+        }
+
+        self.put_u8(bytes.len() as u8);
+        self.put_slice(bytes);
+        // Pad to 64 bytes total (1 len + 63 max chars)
+        let padding = 63 - bytes.len();
+        for _ in 0..padding {
+            self.put_u8(0);
+        }
+        Ok(())
+    }
+
+    /// Write a C-style null-terminated string (CString) to the buffer.
+    ///
+    /// Writes the string bytes followed by a null terminator (0x00).
+    ///
+    /// # Errors
+    ///
+    /// Returns `InvalidInput` if the string contains null bytes.
+    fn try_put_cstring(&mut self, s: &str) -> io::Result<()> {
+        let bytes = s.as_bytes();
+        if bytes.contains(&0) {
+            return Err(io::Error::new(
+                ErrorKind::InvalidInput,
+                "CString cannot contain null bytes",
+            ));
+        }
+
+        self.put_slice(bytes);
+        self.put_u8(0);
+        Ok(())
+    }
+
+    /// Write a Pascal-style string (PString) to the buffer.
+    ///
+    /// Format: 1 byte length prefix followed by the string bytes.
+    ///
     /// # Panics
     ///
     /// Panics if the string is longer than 255 bytes (PString maximum).
     /// Panics if there isn't enough space in the buffer.
+    ///
+    /// # Deprecated
+    ///
+    /// Use `try_put_pstring` instead for explicit error handling.
     fn put_pstring(&mut self, s: &str) {
-        let bytes = s.as_bytes();
-        assert!(
-            bytes.len() <= 255,
-            "PString too long: {} bytes (max 255)",
-            bytes.len()
-        );
-
-        self.put_u8(bytes.len() as u8);
-        self.put_slice(bytes);
+        self.try_put_pstring(s)
+            .expect("put_pstring failed - use try_put_pstring for error handling")
     }
 
     /// Write a Str31 (Pascal string with max length 31) to the buffer.
@@ -203,21 +294,13 @@ pub trait BufMutExt: BufMut {
     ///
     /// Panics if the string is longer than 31 bytes.
     /// Panics if there isn't enough space in the buffer.
+    ///
+    /// # Deprecated
+    ///
+    /// Use `try_put_str31` instead for explicit error handling.
     fn put_str31(&mut self, s: &str) {
-        let bytes = s.as_bytes();
-        assert!(
-            bytes.len() <= 31,
-            "Str31 too long: {} bytes (max 31)",
-            bytes.len()
-        );
-
-        self.put_u8(bytes.len() as u8);
-        self.put_slice(bytes);
-        // Pad to 32 bytes total (1 len + 31 max chars)
-        let padding = 31 - bytes.len();
-        for _ in 0..padding {
-            self.put_u8(0);
-        }
+        self.try_put_str31(s)
+            .expect("put_str31 failed - use try_put_str31 for error handling")
     }
 
     /// Write a Str63 (Pascal string with max length 63) to the buffer.
@@ -228,21 +311,13 @@ pub trait BufMutExt: BufMut {
     ///
     /// Panics if the string is longer than 63 bytes.
     /// Panics if there isn't enough space in the buffer.
+    ///
+    /// # Deprecated
+    ///
+    /// Use `try_put_str63` instead for explicit error handling.
     fn put_str63(&mut self, s: &str) {
-        let bytes = s.as_bytes();
-        assert!(
-            bytes.len() <= 63,
-            "Str63 too long: {} bytes (max 63)",
-            bytes.len()
-        );
-
-        self.put_u8(bytes.len() as u8);
-        self.put_slice(bytes);
-        // Pad to 64 bytes total (1 len + 63 max chars)
-        let padding = 63 - bytes.len();
-        for _ in 0..padding {
-            self.put_u8(0);
-        }
+        self.try_put_str63(s)
+            .expect("put_str63 failed - use try_put_str63 for error handling")
     }
 
     /// Write a C-style null-terminated string (CString) to the buffer.
@@ -253,12 +328,13 @@ pub trait BufMutExt: BufMut {
     ///
     /// Panics if the string contains null bytes.
     /// Panics if there isn't enough space in the buffer.
+    ///
+    /// # Deprecated
+    ///
+    /// Use `try_put_cstring` instead for explicit error handling.
     fn put_cstring(&mut self, s: &str) {
-        let bytes = s.as_bytes();
-        assert!(!bytes.contains(&0), "CString cannot contain null bytes");
-
-        self.put_slice(bytes);
-        self.put_u8(0);
+        self.try_put_cstring(s)
+            .expect("put_cstring failed - use try_put_cstring for error handling")
     }
 }
 
@@ -388,5 +464,86 @@ mod tests {
         let mut buf = Bytes::from(data);
         let result = buf.get_cstring();
         assert!(result.is_err());
+    }
+
+    // Tests for new try_put_* methods with explicit error handling
+
+    #[test]
+    fn test_try_put_pstring_success() {
+        let mut buf = BytesMut::new();
+        let result = buf.try_put_pstring("Hello");
+        assert!(result.is_ok());
+
+        let mut reader = buf.freeze();
+        let decoded = reader.get_pstring().unwrap();
+        assert_eq!(decoded, "Hello");
+    }
+
+    #[test]
+    fn test_try_put_pstring_too_long() {
+        let mut buf = BytesMut::new();
+        let long_string = "a".repeat(256);
+        let result = buf.try_put_pstring(&long_string);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn test_try_put_str31_success() {
+        let mut buf = BytesMut::new();
+        let result = buf.try_put_str31("User");
+        assert!(result.is_ok());
+
+        let mut reader = buf.freeze();
+        let decoded = reader.get_str31().unwrap();
+        assert_eq!(decoded, "User");
+    }
+
+    #[test]
+    fn test_try_put_str31_too_long() {
+        let mut buf = BytesMut::new();
+        let long_string = "a".repeat(32);
+        let result = buf.try_put_str31(&long_string);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn test_try_put_str63_success() {
+        let mut buf = BytesMut::new();
+        let result = buf.try_put_str63("Medium string");
+        assert!(result.is_ok());
+
+        let mut reader = buf.freeze();
+        let decoded = reader.get_str63().unwrap();
+        assert_eq!(decoded, "Medium string");
+    }
+
+    #[test]
+    fn test_try_put_str63_too_long() {
+        let mut buf = BytesMut::new();
+        let long_string = "a".repeat(64);
+        let result = buf.try_put_str63(&long_string);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn test_try_put_cstring_success() {
+        let mut buf = BytesMut::new();
+        let result = buf.try_put_cstring("Hello World");
+        assert!(result.is_ok());
+
+        let mut reader = buf.freeze();
+        let decoded = reader.get_cstring().unwrap();
+        assert_eq!(decoded, "Hello World");
+    }
+
+    #[test]
+    fn test_try_put_cstring_with_null() {
+        let mut buf = BytesMut::new();
+        let result = buf.try_put_cstring("Hello\0World");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), ErrorKind::InvalidInput);
     }
 }
