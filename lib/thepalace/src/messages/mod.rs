@@ -16,6 +16,7 @@ pub mod flags;
 pub mod message;
 pub mod message_id;
 pub mod room;
+pub mod server;
 pub mod user;
 
 pub use asset::*;
@@ -25,10 +26,12 @@ pub use flags::*;
 pub use message::{Message, MessagePayload};
 pub use message_id::MessageId;
 pub use room::*;
+pub use server::*;
 pub use user::*;
 
 // TODO: Implement remaining message payload types
-// - Server info messages (SERVERINFO, USERSTATUS, etc.)
 // - Draw commands (MSG_DRAW)
 // - Prop operations (PROPNEW, PROPMOVE, PROPDEL)
-// - And 40+ more message types
+// - Hotspot operations (SPOTMOVE, SPOTDEL, SPOTNEW, SPOTSTATE)
+// - Admin operations (SUPERUSER, KILLUSER, SERVERDOWN)
+// - And 30+ more message types

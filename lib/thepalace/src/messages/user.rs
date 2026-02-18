@@ -47,6 +47,9 @@ pub struct UserRec {
 }
 
 impl UserRec {
+    /// Size of UserRec in bytes (always 124)
+    pub const SIZE: usize = 4 + 4 + (9 * 8) + 2 + 2 + 2 + 2 + 2 + 2 + 32;
+
     /// Parse a UserRec from bytes
     pub fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
         let user_id = buf.get_i32();
