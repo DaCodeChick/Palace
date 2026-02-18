@@ -47,14 +47,8 @@ pub trait BufExt: Buf {
         let mut bytes = vec![0u8; len];
         self.copy_to_slice(&mut bytes);
 
-        // Palace Protocol uses MacRoman encoding, but for now we'll treat as UTF-8/ASCII
-        // TODO: Implement proper MacRoman to UTF-8 conversion
-        String::from_utf8(bytes).map_err(|e| {
-            io::Error::new(
-                ErrorKind::InvalidData,
-                format!("invalid UTF-8 in PString: {}", e),
-            )
-        })
+        // Palace Protocol uses MacRoman encoding - convert to UTF-8
+        Ok(macroman_to_string(&bytes))
     }
 
     /// Read a Str31 (Pascal string with max length 31) from the buffer.
@@ -91,12 +85,7 @@ pub trait BufExt: Buf {
         let padding = 31 - len;
         self.advance(padding);
 
-        String::from_utf8(bytes).map_err(|e| {
-            io::Error::new(
-                ErrorKind::InvalidData,
-                format!("invalid UTF-8 in Str31: {}", e),
-            )
-        })
+        Ok(macroman_to_string(&bytes))
     }
 
     /// Read a Str63 (Pascal string with max length 63) from the buffer.
@@ -133,12 +122,7 @@ pub trait BufExt: Buf {
         let padding = 63 - len;
         self.advance(padding);
 
-        String::from_utf8(bytes).map_err(|e| {
-            io::Error::new(
-                ErrorKind::InvalidData,
-                format!("invalid UTF-8 in Str63: {}", e),
-            )
-        })
+        Ok(macroman_to_string(&bytes))
     }
 
     /// Read a C-style null-terminated string (CString) from the buffer.
@@ -156,12 +140,7 @@ pub trait BufExt: Buf {
             let byte = self.get_u8();
             if byte == 0 {
                 // Found null terminator
-                return String::from_utf8(bytes).map_err(|e| {
-                    io::Error::new(
-                        ErrorKind::InvalidData,
-                        format!("invalid UTF-8 in CString: {}", e),
-                    )
-                });
+                return Ok(macroman_to_string(&bytes));
             }
             bytes.push(byte);
         }
@@ -173,11 +152,168 @@ pub trait BufExt: Buf {
     }
 }
 
+/// Convert MacRoman encoded bytes to UTF-8 String.
+///
+/// MacRoman is the character encoding used by classic Mac OS (pre-OS X).
+/// Codes 0-127 are identical to ASCII. Codes 128-255 map to various
+/// special characters, accented letters, and symbols.
+///
+/// This function handles the upper 128 characters according to the MacRoman
+/// character set specification.
+fn macroman_to_string(bytes: &[u8]) -> String {
+    bytes.iter().map(|&b| macroman_to_char(b)).collect()
+}
+
+/// Convert a single MacRoman byte to a Unicode character.
+///
+/// Codes 0-127 are identical to ASCII.
+/// Codes 128-255 use the MacRoman character mapping.
+fn macroman_to_char(byte: u8) -> char {
+    match byte {
+        // 0-127: Standard ASCII
+        0..=127 => byte as char,
+
+        // 128-255: MacRoman specific mappings
+        128 => 'Ä',
+        129 => 'Å',
+        130 => 'Ç',
+        131 => 'É',
+        132 => 'Ñ',
+        133 => 'Ö',
+        134 => 'Ü',
+        135 => 'á',
+        136 => 'à',
+        137 => 'â',
+        138 => 'ä',
+        139 => 'ã',
+        140 => 'å',
+        141 => 'ç',
+        142 => 'é',
+        143 => 'è',
+        144 => 'ê',
+        145 => 'ë',
+        146 => 'í',
+        147 => 'ì',
+        148 => 'î',
+        149 => 'ï',
+        150 => 'ñ',
+        151 => 'ó',
+        152 => 'ò',
+        153 => 'ô',
+        154 => 'ö',
+        155 => 'õ',
+        156 => 'ú',
+        157 => 'ù',
+        158 => 'û',
+        159 => 'ü',
+        160 => '†',
+        161 => '°',
+        162 => '¢',
+        163 => '£',
+        164 => '§',
+        165 => '•',
+        166 => '¶',
+        167 => 'ß',
+        168 => '®',
+        169 => '©',
+        170 => '™',
+        171 => '´',
+        172 => '¨',
+        173 => '≠',
+        174 => 'Æ',
+        175 => 'Ø',
+        176 => '∞',
+        177 => '±',
+        178 => '≤',
+        179 => '≥',
+        180 => '¥',
+        181 => 'µ',
+        182 => '∂',
+        183 => '∑',
+        184 => '∏',
+        185 => 'π',
+        186 => '∫',
+        187 => 'ª',
+        188 => 'º',
+        189 => 'Ω',
+        190 => 'æ',
+        191 => 'ø',
+        192 => '¿',
+        193 => '¡',
+        194 => '¬',
+        195 => '√',
+        196 => 'ƒ',
+        197 => '≈',
+        198 => '∆',
+        199 => '«',
+        200 => '»',
+        201 => '…',
+        202 => '\u{00A0}', // non-breaking space
+        203 => 'À',
+        204 => 'Ã',
+        205 => 'Õ',
+        206 => 'Œ',
+        207 => 'œ',
+        208 => '–',
+        209 => '—',
+        210 => '"',
+        211 => '"',
+        212 => '\'',
+        213 => '\'',
+        214 => '÷',
+        215 => '◊',
+        216 => 'ÿ',
+        217 => 'Ÿ',
+        218 => '⁄',
+        219 => '€',
+        220 => '‹',
+        221 => '›',
+        222 => 'ﬁ',
+        223 => 'ﬂ',
+        224 => '‡',
+        225 => '·',
+        226 => '‚',
+        227 => '„',
+        228 => '‰',
+        229 => 'Â',
+        230 => 'Ê',
+        231 => 'Á',
+        232 => 'Ë',
+        233 => 'È',
+        234 => 'Í',
+        235 => 'Î',
+        236 => 'Ï',
+        237 => 'Ì',
+        238 => 'Ó',
+        239 => 'Ô',
+        240 => '\u{F8FF}', // Apple logo (private use area)
+        241 => 'Ò',
+        242 => 'Ú',
+        243 => 'Û',
+        244 => 'Ù',
+        245 => 'ı',
+        246 => 'ˆ',
+        247 => '˜',
+        248 => '¯',
+        249 => '˘',
+        250 => '˙',
+        251 => '˚',
+        252 => '¸',
+        253 => '˝',
+        254 => '˛',
+        255 => 'ˇ',
+    }
+}
+
 /// Extension trait for writing Palace Protocol data types to buffers.
 pub trait BufMutExt: BufMut {
     /// Write a Pascal-style string (PString) to the buffer.
     ///
     /// Format: 1 byte length prefix followed by the string bytes.
+    ///
+    /// Note: The input string should be UTF-8. For compatibility with classic
+    /// Mac clients expecting MacRoman encoding, stick to ASCII subset or use
+    /// characters that map identically in both encodings.
     ///
     /// # Errors
     ///
@@ -199,6 +335,9 @@ pub trait BufMutExt: BufMut {
     /// Write a Str31 (Pascal string with max length 31) to the buffer.
     ///
     /// Writes a fixed 32-byte field: 1 length byte + up to 31 chars + padding.
+    ///
+    /// Note: The input string should be UTF-8. For compatibility with classic
+    /// Mac clients expecting MacRoman encoding, stick to ASCII subset.
     ///
     /// # Errors
     ///
