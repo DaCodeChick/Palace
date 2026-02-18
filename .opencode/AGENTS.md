@@ -4,6 +4,47 @@
 
 **This project uses a strict clean-room implementation approach. Original Palace source code has been reviewed for algorithm verification ONLY and must NOT be distributed or directly referenced in our codebase.**
 
+## 🔧 RDSS Policy: Refactor, Despaghettify, Simplify, Split
+
+**When working on this codebase, always apply the RDSS principle:**
+
+### Refactor
+- Continuously improve code structure and organization
+- Replace awkward APIs with ergonomic ones
+- Eliminate unnecessary complexity and indirection
+- Update code to use modern Rust patterns and idioms
+
+### Despaghettify
+- Break up tangled dependencies and circular references
+- Separate concerns into distinct, focused components
+- Make data flow clear and unidirectional where possible
+- Eliminate global state and hidden dependencies
+
+### Simplify
+- Remove unused code, redundant logic, and unnecessary abstractions
+- Use primitive types directly instead of type aliases that provide no safety
+- Prefer explicit over implicit behavior
+- Reduce cognitive load for future maintainers
+
+### Split
+- Break large modules into smaller, focused sub-modules
+- When a file exceeds ~500 lines, consider splitting it
+- Group related functionality into coherent modules
+- Keep public APIs in parent modules, implementation details in sub-modules
+
+**Examples of RDSS in action:**
+- ✅ Removed `UserID`/`RoomID`/`HotspotID` type aliases → use `i32`/`i16` directly
+- ✅ Removed `reserved` struct fields → handle padding in I/O operations only
+- ✅ Changed `AuxFlags` from `i32` to `u32` → bitflags should always be unsigned
+- ✅ Removed `UNUSED_1` flag → eliminate dead code
+
+**When to apply RDSS:**
+- During code review of new features
+- When touching existing code for bug fixes
+- When implementing new protocol features
+- When you notice complexity that could be simplified
+- Proactively, not just reactively
+
 ### What We've Extracted (Clean Room):
 
 ✅ **Algorithm Verification Completed (DO NOT reference original source again):**
