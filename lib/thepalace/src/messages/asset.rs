@@ -3,7 +3,7 @@
 //! This module implements message structures for asset-related operations:
 //! - MessageId::AssetQuery: Request an asset from client or server
 //! - MessageId::AssetSend: Send an asset from server to client
-//! - MessageId::AssetRegi: Send an asset from client to server (register)
+//! - MessageId::AssetRegi: Send an asset from client to server (uses AssetSendMsg)
 //!
 //! Assets can be transmitted in blocks for large files, though the original
 //! Palace server only supports single-block transfers.
@@ -102,8 +102,13 @@ impl AssetDescriptor {
 
 /// MessageId::AssetSend / MessageId::AssetRegi - Transmit an asset in blocks
 ///
-/// MessageId::AssetSend: Server sends asset to client
-/// MessageId::AssetRegi: Client sends asset to server (register)
+/// MessageId::AssetSend / MessageId::AssetRegi - Bidirectional asset transfer
+///
+/// Used for asset transfer in both directions:
+/// - MessageId::AssetSend: Server sends asset to client
+/// - MessageId::AssetRegi: Client sends asset to server (register/upload)
+///
+/// Both message types use the exact same format.
 ///
 /// Assets can be transmitted in multiple blocks, though the original Palace
 /// server only supports single-block transfers (one message per asset).
@@ -227,20 +232,6 @@ impl MessagePayload for AssetSendMsg {
 
     fn to_bytes(&self, buf: &mut impl BufMut) {
         self.to_bytes(buf);
-    }
-}
-
-/// MessageId::AssetRegi - Register/send an asset from client to server
-///
-/// This message has the exact same format as MessageId::AssetSend, but is
-/// used when the client is sending assets to the server instead of
-/// the server sending to the client.
-pub type AssetRegiMsg = AssetSendMsg;
-
-impl AssetRegiMsg {
-    /// Get the message ID for AssetRegi
-    pub fn message_id_regi() -> MessageId {
-        MessageId::AssetRegi
     }
 }
 
