@@ -23,6 +23,7 @@
 
 use cfg_if::cfg_if;
 use std::fmt;
+use std::ops::{Add, Sub};
 
 #[cfg(feature = "net")]
 pub mod messages;
@@ -83,22 +84,6 @@ impl Point {
         (dh * dh + dv * dv).sqrt()
     }
 
-    /// Add two points (vector addition)
-    pub const fn add(&self, other: &Point) -> Self {
-        Self {
-            v: self.v.saturating_add(other.v),
-            h: self.h.saturating_add(other.h),
-        }
-    }
-
-    /// Subtract two points (vector subtraction)
-    pub const fn sub(&self, other: &Point) -> Self {
-        Self {
-            v: self.v.saturating_sub(other.v),
-            h: self.h.saturating_sub(other.h),
-        }
-    }
-
     /// Parse a Point from bytes (v, h order - 4 bytes total)
     #[cfg(feature = "net")]
     #[allow(unused_imports)]
@@ -117,6 +102,28 @@ impl Point {
         use bytes::BufMut;
         buf.put_i16(self.v);
         buf.put_i16(self.h);
+    }
+}
+
+impl Add for Point {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            v: self.v.saturating_add(other.v),
+            h: self.h.saturating_add(other.h),
+        }
+    }
+}
+
+impl Sub for Point {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            v: self.v.saturating_sub(other.v),
+            h: self.h.saturating_sub(other.h),
+        }
     }
 }
 
@@ -254,9 +261,18 @@ mod tests {
     fn test_point_add() {
         let p1 = Point::new(10, 20);
         let p2 = Point::new(5, 15);
-        let result = p1.add(&p2);
+        let result = p1 + p2;
         assert_eq!(result.h, 15);
         assert_eq!(result.v, 35);
+    }
+
+    #[test]
+    fn test_point_sub() {
+        let p1 = Point::new(10, 20);
+        let p2 = Point::new(5, 15);
+        let result = p1 - p2;
+        assert_eq!(result.h, 5);
+        assert_eq!(result.v, 5);
     }
 
     #[test]
