@@ -21,19 +21,13 @@ use crate::messages::{MessageId, MessagePayload};
 ///
 /// The message has no payload - just the 12-byte header with
 /// eventType = 0x74697972 ('tiyr')
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TiyidMsg;
 
 impl TiyidMsg {
     /// Create a new TIYID message
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
-    }
-}
-
-impl Default for TiyidMsg {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

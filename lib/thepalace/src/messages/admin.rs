@@ -154,7 +154,7 @@ impl From<ServerDownReason> for i32 {
 /// Server sends this to inform client that connection is being dropped.
 /// The reason is encoded in the Message's refNum field.
 /// If reason is Verbose, the message contains a CString explanation.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct ServerDownMsg {
     /// Optional verbose reason (only if reason is Verbose)
     pub reason_text: Option<String>,
@@ -162,7 +162,7 @@ pub struct ServerDownMsg {
 
 impl ServerDownMsg {
     /// Create a new ServerDownMsg without verbose reason
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { reason_text: None }
     }
 
@@ -176,12 +176,6 @@ impl ServerDownMsg {
     /// Check if this has a verbose reason
     pub fn is_verbose(&self) -> bool {
         self.reason_text.is_some()
-    }
-}
-
-impl Default for ServerDownMsg {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
