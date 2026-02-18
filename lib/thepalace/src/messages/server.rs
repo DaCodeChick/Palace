@@ -14,7 +14,6 @@ use bytes::{Buf, BufMut};
 use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::flags::{DownloadCaps, ServerFlags, UploadCaps};
 use crate::messages::{MessageId, MessagePayload};
-use crate::UserID;
 
 use super::user::UserRec;
 

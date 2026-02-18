@@ -231,15 +231,6 @@ impl fmt::Display for AssetType {
     }
 }
 
-/// User ID type
-pub type UserID = i32;
-
-/// Room ID type
-pub type RoomID = i16;
-
-/// Hotspot ID type
-pub type HotspotID = i16;
-
 #[cfg(test)]
 mod tests {
     use super::*;

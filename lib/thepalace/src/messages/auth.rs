@@ -13,7 +13,6 @@ use crate::messages::flags::{
     AuxFlags, DownloadCaps, Engine2DCaps, Engine3DCaps, Graphics2DCaps, UploadCaps,
 };
 use crate::messages::{MessageId, MessagePayload};
-use crate::RoomID;
 
 /// MessageId::Tiyid - First message sent to detect endianness
 ///
@@ -78,7 +77,7 @@ pub struct AuxRegistrationRec {
     /// Demo time limit in seconds (0 = no limit)
     pub demo_limit: u32,
     /// Desired room ID to enter
-    pub desired_room: RoomID,
+    pub desired_room: i16,
     /// Client signature (6 bytes) - identifies the Palace client software
     /// Examples: '350211' for ThePalace, 'PC' + 4-byte version for PalaceChat, 'OPNPAL' for OpenPalace
     pub client_signature: [u8; 6],
@@ -101,7 +100,7 @@ impl AuxRegistrationRec {
     pub const SIZE: usize = 128;
 
     /// Create a new registration record for guest login
-    pub fn new_guest(user_name: &str, desired_room: RoomID) -> Self {
+    pub fn new_guest(user_name: &str, desired_room: i16) -> Self {
         Self {
             crc: 0,
             counter: 0,
@@ -125,7 +124,7 @@ impl AuxRegistrationRec {
     }
 
     /// Create a new registration record for registered user login
-    pub fn new_registered(user_name: &str, crc: u32, counter: u32, desired_room: RoomID) -> Self {
+    pub fn new_registered(user_name: &str, crc: u32, counter: u32, desired_room: i16) -> Self {
         Self {
             crc,
             counter,
@@ -243,14 +242,14 @@ impl LogonMsg {
     }
 
     /// Create a LOGON message for guest login
-    pub fn guest(user_name: &str, desired_room: RoomID) -> Self {
+    pub fn guest(user_name: &str, desired_room: i16) -> Self {
         Self {
             rec: AuxRegistrationRec::new_guest(user_name, desired_room),
         }
     }
 
     /// Create a LOGON message for registered user login
-    pub fn registered(user_name: &str, crc: u32, counter: u32, desired_room: RoomID) -> Self {
+    pub fn registered(user_name: &str, crc: u32, counter: u32, desired_room: i16) -> Self {
         Self {
             rec: AuxRegistrationRec::new_registered(user_name, crc, counter, desired_room),
         }

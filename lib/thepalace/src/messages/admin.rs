@@ -9,7 +9,6 @@ use bytes::{Buf, BufMut};
 
 use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::{MessageId, MessagePayload};
-use crate::UserID;
 
 /// MessageId::SuperUser - Request to enter superuser (wizard/god) mode
 ///
@@ -51,13 +50,13 @@ impl MessagePayload for SuperUserMsg {
 /// Client (with sufficient authority) sends this to kick a user off the server.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KillUserMsg {
-    /// UserID of the user to disconnect
-    pub target_id: UserID,
+    /// User ID of the user to disconnect
+    pub target_id: i32,
 }
 
 impl KillUserMsg {
     /// Create a new KillUserMsg
-    pub fn new(target_id: UserID) -> Self {
+    pub fn new(target_id: i32) -> Self {
         Self { target_id }
     }
 }

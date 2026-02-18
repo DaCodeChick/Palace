@@ -13,7 +13,6 @@ use bytes::{Buf, BufMut};
 
 use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::{MessageId, MessagePayload};
-use crate::UserID;
 
 /// MessageId::Talk - Normal chat message
 ///
@@ -130,7 +129,7 @@ impl MessagePayload for XTalkMsg {
 /// - text: CString (null-terminated, max 255 chars)
 #[derive(Debug, Clone, PartialEq)]
 pub struct WhisperMsg {
-    pub target: UserID,
+    pub target: i32,
     pub text: String,
 }
 
@@ -172,7 +171,7 @@ impl MessagePayload for WhisperMsg {
 /// - text: [u8; len] (encrypted text bytes)
 #[derive(Debug, Clone, PartialEq)]
 pub struct XWhisperMsg {
-    pub target: UserID,
+    pub target: i32,
     pub text: Vec<u8>,
 }
 
@@ -199,7 +198,7 @@ impl XWhisperMsg {
     }
 
     /// Encrypt plaintext using the Palace XOR cipher
-    pub fn encrypt(target: UserID, plaintext: &str) -> Self {
+    pub fn encrypt(target: i32, plaintext: &str) -> Self {
         // TODO: Implement proper encryption using crate::algo::crypt()
         Self {
             target,

@@ -15,7 +15,7 @@ use bytes::{Buf, BufMut, Bytes};
 use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::{flags::RoomFlags, MessageId, MessagePayload};
 use crate::room::{HotspotState, HotspotType};
-use crate::{AssetSpec, Point, RoomID};
+use crate::{AssetSpec, Point};
 
 // ============================================================================
 // Room Record Structures
@@ -250,7 +250,7 @@ pub struct RoomRec {
     /// Default avatar face ID for users in this room
     pub faces_id: i32,
     /// Room ID number
-    pub room_id: RoomID,
+    pub room_id: i16,
     /// Offset into varBuf for room name (PString)
     pub room_name_ofst: i16,
     /// Offset into varBuf for background picture name (PString)
@@ -413,7 +413,7 @@ impl RoomRec {
 /// - dest: RoomID (2 bytes, i16)
 #[derive(Debug, Clone, PartialEq)]
 pub struct RoomGotoMsg {
-    pub dest: RoomID,
+    pub dest: i16,
 }
 
 impl RoomGotoMsg {
@@ -1036,9 +1036,6 @@ mod prop_tests {
 // Hotspot Operation Messages
 // ============================================================================
 
-/// Hotspot ID type
-pub type HotspotID = i32;
-
 /// MessageId::SpotDel - Delete a hotspot from the room
 ///
 /// Client requests server to delete a hotspot. If successful,
@@ -1046,12 +1043,12 @@ pub type HotspotID = i32;
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpotDelMsg {
     /// ID of the hotspot to delete
-    pub spot_id: HotspotID,
+    pub spot_id: i32,
 }
 
 impl SpotDelMsg {
     /// Create a new SpotDelMsg
-    pub fn new(spot_id: HotspotID) -> Self {
+    pub fn new(spot_id: i32) -> Self {
         Self { spot_id }
     }
 }
@@ -1078,16 +1075,16 @@ impl MessagePayload for SpotDelMsg {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpotMoveMsg {
     /// Room ID containing the hotspot
-    pub room_id: RoomID,
+    pub room_id: i16,
     /// Hotspot ID to move
-    pub spot_id: HotspotID,
+    pub spot_id: i32,
     /// New position for the hotspot
     pub pos: Point,
 }
 
 impl SpotMoveMsg {
     /// Create a new SpotMoveMsg
-    pub fn new(room_id: RoomID, spot_id: HotspotID, pos: Point) -> Self {
+    pub fn new(room_id: i16, spot_id: i32, pos: Point) -> Self {
         Self {
             room_id,
             spot_id,
@@ -1142,16 +1139,16 @@ impl MessagePayload for SpotNewMsg {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpotStateMsg {
     /// Room ID containing the hotspot
-    pub room_id: RoomID,
+    pub room_id: i16,
     /// Hotspot ID to modify
-    pub spot_id: HotspotID,
+    pub spot_id: i32,
     /// New state value
     pub state: i16,
 }
 
 impl SpotStateMsg {
     /// Create a new SpotStateMsg
-    pub fn new(room_id: RoomID, spot_id: HotspotID, state: i16) -> Self {
+    pub fn new(room_id: i16, spot_id: i32, state: i16) -> Self {
         Self {
             room_id,
             spot_id,
@@ -1194,13 +1191,13 @@ impl MessagePayload for SpotStateMsg {
 /// - door_id: HotspotID of the door hotspot
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DoorLockMsg {
-    pub room_id: RoomID,
-    pub door_id: HotspotID,
+    pub room_id: i16,
+    pub door_id: i32,
 }
 
 impl DoorLockMsg {
     /// Create a new DoorLockMsg
-    pub fn new(room_id: RoomID, door_id: HotspotID) -> Self {
+    pub fn new(room_id: i16, door_id: i32) -> Self {
         Self { room_id, door_id }
     }
 }
@@ -1233,13 +1230,13 @@ impl MessagePayload for DoorLockMsg {
 /// - door_id: HotspotID of the door hotspot
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DoorUnlockMsg {
-    pub room_id: RoomID,
-    pub door_id: HotspotID,
+    pub room_id: i16,
+    pub door_id: i32,
 }
 
 impl DoorUnlockMsg {
     /// Create a new DoorUnlockMsg
-    pub fn new(room_id: RoomID, door_id: HotspotID) -> Self {
+    pub fn new(room_id: i16, door_id: i32) -> Self {
         Self { room_id, door_id }
     }
 }
@@ -1277,14 +1274,14 @@ impl MessagePayload for DoorUnlockMsg {
 /// - pos: New position for the picture
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PictMoveMsg {
-    pub room_id: RoomID,
-    pub spot_id: HotspotID,
+    pub room_id: i16,
+    pub spot_id: i32,
     pub pos: Point,
 }
 
 impl PictMoveMsg {
     /// Create a new PictMoveMsg
-    pub fn new(room_id: RoomID, spot_id: HotspotID, pos: Point) -> Self {
+    pub fn new(room_id: i16, spot_id: i32, pos: Point) -> Self {
         Self {
             room_id,
             spot_id,

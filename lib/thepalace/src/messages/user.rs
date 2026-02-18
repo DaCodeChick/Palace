@@ -14,7 +14,7 @@ use bytes::{Buf, BufMut};
 
 use crate::buffer::{BufExt, BufMutExt};
 use crate::messages::{MessageId, MessagePayload};
-use crate::{AssetSpec, Point, RoomID, UserID};
+use crate::{AssetSpec, Point};
 
 /// UserRec - Complete user record structure
 ///
@@ -34,10 +34,10 @@ use crate::{AssetSpec, Point, RoomID, UserID};
 /// - name: 32 bytes (Str31)
 #[derive(Debug, Clone, PartialEq)]
 pub struct UserRec {
-    pub user_id: UserID,
+    pub user_id: i32,
     pub room_pos: Point,
     pub prop_spec: [AssetSpec; 9],
-    pub room_id: RoomID,
+    pub room_id: i16,
     pub face_nbr: i16,
     pub color_nbr: i16,
     pub away_flag: i16,
