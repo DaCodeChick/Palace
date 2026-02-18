@@ -148,12 +148,12 @@ impl Message {
     }
 
     /// Get the total message size (header + payload)
-    pub fn total_size(&self) -> usize {
+    pub const fn total_size(&self) -> usize {
         Self::HEADER_SIZE + self.payload.len()
     }
 
     /// Get the payload size
-    pub fn payload_size(&self) -> usize {
+    pub const fn payload_size(&self) -> usize {
         self.payload.len()
     }
 

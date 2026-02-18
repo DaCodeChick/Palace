@@ -189,7 +189,7 @@ pub enum AssetType {
 
 impl AssetType {
     /// Convert AssetType to its 4-character ASCII representation
-    pub fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             AssetType::Prop => "Prop",
             AssetType::Userbase => "User",

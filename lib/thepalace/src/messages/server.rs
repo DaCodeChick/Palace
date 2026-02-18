@@ -139,7 +139,7 @@ impl UserListMsg {
     }
 
     /// Number of users
-    pub fn count(&self) -> usize {
+    pub const fn count(&self) -> usize {
         self.users.len()
     }
 }
@@ -180,7 +180,7 @@ impl ListOfAllUsersMsg {
     }
 
     /// Number of users
-    pub fn count(&self) -> usize {
+    pub const fn count(&self) -> usize {
         self.users.len()
     }
 }
