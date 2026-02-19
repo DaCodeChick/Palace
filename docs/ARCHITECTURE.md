@@ -196,23 +196,31 @@ Iptscrae is a stack-based scripting language embedded in Palace for interactive 
 Scripts can respond to 20+ event types:
 
 ```rust
-const PE_SELECT:     u32 = 0x00000001;  // Hotspot clicked
-const PE_LOCK:       u32 = 0x00000002;  // Door locked
-const PE_UNLOCK:     u32 = 0x00000004;  // Door unlocked
-const PE_HIDE:       u32 = 0x00000008;  // Hotspot hidden
-const PE_SHOW:       u32 = 0x00000010;  // Hotspot shown
-const PE_STARTUP:    u32 = 0x00000020;  // Room startup
-const PE_ALARM:      u32 = 0x00000040;  // Timer alarm
-const PE_CUSTOM:     u32 = 0x00000080;  // Custom event
-const PE_INCHAT:     u32 = 0x00000100;  // Chat received
-const PE_PROPCHANGE: u32 = 0x00000200;  // Prop changed
-const PE_ENTER:      u32 = 0x00000400;  // User entered
-const PE_LEAVE:      u32 = 0x00000800;  // User left
-const PE_OUTCHAT:    u32 = 0x00001000;  // Chat sent
-const PE_SIGNON:     u32 = 0x00002000;  // User logged on
-const PE_SIGNOFF:    u32 = 0x00004000;  // User logged off
-const PE_MACRO0:     u32 = 0x00008000;  // Macro 0
-// ... MACRO1-9
+bitflags! {
+    pub struct EventMask: u32 {
+        const SELECT     = 0x00000001;  // Hotspot clicked
+        const LOCK       = 0x00000002;  // Door locked
+        const UNLOCK     = 0x00000004;  // Door unlocked
+        const HIDE       = 0x00000008;  // Hotspot hidden
+        const SHOW       = 0x00000010;  // Hotspot shown
+        const STARTUP    = 0x00000020;  // Room startup
+        const ALARM      = 0x00000040;  // Timer alarm
+        const CUSTOM     = 0x00000080;  // Custom event
+        const INCHAT     = 0x00000100;  // Chat received
+        const PROPCHANGE = 0x00000200;  // Prop changed
+        const ENTER      = 0x00000400;  // User entered
+        const LEAVE      = 0x00000800;  // User left
+        const OUTCHAT    = 0x00001000;  // Chat sent
+        const SIGNON     = 0x00002000;  // User logged on
+        const SIGNOFF    = 0x00004000;  // User logged off
+        const MACRO0     = 0x00008000;  // Macro 0
+        // ... MACRO1-9 (up to 0x01000000)
+    }
+}
+
+// Usage:
+let mask = EventMask::SELECT | EventMask::ENTER | EventMask::LEAVE;
+if mask.contains(EventMask::SELECT) { /* ... */ }
 ```
 
 ### Example Scripts

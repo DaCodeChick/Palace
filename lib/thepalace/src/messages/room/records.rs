@@ -9,6 +9,7 @@
 use bytes::{Buf, BufMut, Bytes};
 
 use crate::buffer::BufExt;
+use crate::iptscrae::EventMask;
 use crate::messages::flags::RoomFlags;
 use crate::room::{HotspotState, HotspotType};
 use crate::{AssetSpec, Point};
@@ -101,7 +102,7 @@ impl PictureRec {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Hotspot {
     /// Bitmask of script events this hotspot responds to
-    pub script_event_mask: i32,
+    pub script_event_mask: EventMask,
     /// Hotspot behavior flags
     pub flags: i32,
     /// Security information
@@ -140,7 +141,7 @@ pub struct Hotspot {
 
 impl Hotspot {
     pub fn from_bytes(buf: &mut impl Buf) -> std::io::Result<Self> {
-        let script_event_mask = buf.get_i32();
+        let script_event_mask = buf.get_i32().into();
         let flags = buf.get_i32();
         let secure_info = buf.get_i32();
         let ref_con = buf.get_i32();
@@ -198,7 +199,7 @@ impl Hotspot {
     }
 
     pub fn to_bytes(&self, buf: &mut impl BufMut) {
-        buf.put_i32(self.script_event_mask);
+        buf.put_i32(self.script_event_mask.into());
         buf.put_i32(self.flags);
         buf.put_i32(self.secure_info);
         buf.put_i32(self.ref_con);
@@ -435,8 +436,10 @@ mod tests {
 
     #[test]
     fn test_hotspot_roundtrip() {
+        use crate::iptscrae::EventMask;
+
         let hotspot = Hotspot {
-            script_event_mask: 0x0007, // SELECT | ENTER | LEAVE
+            script_event_mask: EventMask::SELECT | EventMask::LOCK | EventMask::UNLOCK,
             flags: 0,
             secure_info: 0,
             ref_con: 0,
