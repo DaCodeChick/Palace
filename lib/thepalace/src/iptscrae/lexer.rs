@@ -212,6 +212,10 @@ impl Lexer {
                 self.advance();
                 Token::new(TokenKind::RightParen, pos)
             }
+            ',' => {
+                self.advance();
+                Token::new(TokenKind::Comma, pos)
+            }
             _ => {
                 return Err(LexError::InvalidCharacter {
                     ch,

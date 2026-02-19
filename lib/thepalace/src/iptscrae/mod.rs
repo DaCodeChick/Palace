@@ -23,6 +23,8 @@ pub mod context;
 pub mod events;
 pub mod lexer;
 pub mod parser;
+#[cfg(feature = "room-script")]
+pub mod room_script;
 pub mod token;
 pub mod value;
 pub mod vm;
@@ -32,6 +34,8 @@ pub use context::{ScriptActions, ScriptContext, SecurityLevel};
 pub use events::{EventMask, EventType};
 pub use lexer::{LexError, Lexer};
 pub use parser::{ParseError, Parser};
+#[cfg(feature = "room-script")]
+pub use room_script::{DoorDecl, PictureDecl, RoomDecl, RoomFlags, SpotDecl, StateDecl};
 pub use token::{SourcePos, Token, TokenKind};
 pub use value::Value;
 pub use vm::{ExecutionLimits, Vm, VmError};

@@ -12,6 +12,7 @@ default = ["net", "prop", "iptscrae", "assets", "room"]
 net = ["dep:bitflags", "dep:bytes"]
 prop = ["dep:bitflags", "dep:bytes", "dep:flate2", "dep:png"]
 iptscrae = []
+room-script = ["iptscrae", "room"]  # Room script parsing requires both iptscrae and room features
 assets = ["dep:png", "dep:flate2"]
 room = ["dep:bitflags", "dep:bytes"]
 ffi = ["dep:cbindgen"]
