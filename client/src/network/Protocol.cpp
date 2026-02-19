@@ -1,5 +1,6 @@
 #include "Protocol.h"
 #include <QDebug>
+#include <QDataStream>
 
 namespace Palace {
 namespace Network {
@@ -49,9 +50,9 @@ bool Protocol::parseHeader(const QByteArray& data, ProtocolHeader& header) {
         return false;
     }
     
-    header.eventType = readU32(data, 0);
-    header.length = readU32(data, 4);
-    header.refNum = readU32(data, 8);
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    stream >> header.eventType >> header.length >> header.refNum;
     
     qDebug() << "Protocol::parseHeader: type=" << Qt::hex << header.eventType
              << "len=" << Qt::dec << header.length 
@@ -62,7 +63,13 @@ bool Protocol::parseHeader(const QByteArray& data, ProtocolHeader& header) {
 
 MessageType Protocol::identifyMessage(const QByteArray& data) {
     if (data.size() < 4) return static_cast<MessageType>(0);
-    uint32_t type = readU32(data, 0);
+    
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint32 type;
+    stream >> type;
+    
     return static_cast<MessageType>(type);
 }
 
@@ -73,7 +80,12 @@ uint32_t Protocol::parseTiyid(const QByteArray& payload) {
         return 0;
     }
     
-    uint32_t userId = readU32(payload, 0);
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint32 userId;
+    stream >> userId;
+    
     qDebug() << "Protocol::parseTiyid: Received UserID =" << userId;
     return userId;
 }
@@ -93,15 +105,14 @@ UserInfo Protocol::parseUserNew(const QByteArray& payload) {
         return user;
     }
     
-    int offset = 0;
-    user.userId = readU32(payload, offset); offset += 4;
-    user.roomPos.h = readI16(payload, offset); offset += 2;
-    user.roomPos.v = readI16(payload, offset); offset += 2;
-    user.roomId = readI16(payload, offset); offset += 2;
-    user.faceNbr = readI16(payload, offset); offset += 2;
-    user.colorNbr = readI16(payload, offset); offset += 2;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    // Name is Pascal string
+    stream >> user.userId >> user.roomPos.h >> user.roomPos.v 
+           >> user.roomId >> user.faceNbr >> user.colorNbr;
+    
+    // Name is Pascal string - need to use offset-based reading for this
+    int offset = 12;  // After the fixed fields
     user.name = readPascalString(payload, offset);
     
     qDebug() << "Protocol::parseUserNew: User" << user.userId << user.name 
@@ -116,7 +127,12 @@ uint32_t Protocol::parseUserExit(const QByteArray& payload) {
         return 0;
     }
     
-    uint32_t userId = readU32(payload, 0);
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint32 userId;
+    stream >> userId;
+    
     qDebug() << "Protocol::parseUserExit: User" << userId << "left";
     return userId;
 }
@@ -129,22 +145,26 @@ QList<UserInfo> Protocol::parseUserList(const QByteArray& payload) {
         return users;
     }
     
-    int offset = 0;
-    uint32_t userCount = readU32(payload, offset); offset += 4;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint32 userCount;
+    stream >> userCount;
     
     qDebug() << "Protocol::parseUserList: Parsing" << userCount << "users";
     
+    int offset = 4;  // After user count
     for (uint32_t i = 0; i < userCount && offset < payload.size(); ++i) {
         UserInfo user = {};
         
         if (offset + 12 > payload.size()) break;
         
-        user.userId = readU32(payload, offset); offset += 4;
-        user.roomPos.h = readI16(payload, offset); offset += 2;
-        user.roomPos.v = readI16(payload, offset); offset += 2;
-        user.roomId = readI16(payload, offset); offset += 2;
-        user.faceNbr = readI16(payload, offset); offset += 2;
-        user.colorNbr = readI16(payload, offset); offset += 2;
+        // Read fixed fields with QDataStream
+        QDataStream userStream(payload.mid(offset, 12));
+        userStream.setByteOrder(QDataStream::LittleEndian);
+        userStream >> user.userId >> user.roomPos.h >> user.roomPos.v 
+                   >> user.roomId >> user.faceNbr >> user.colorNbr;
+        offset += 12;
         
         // Name is Pascal string
         user.name = readPascalString(payload, offset);
@@ -159,17 +179,18 @@ QList<UserInfo> Protocol::parseUserList(const QByteArray& payload) {
 RoomInfo Protocol::parseRoomDesc(const QByteArray& payload) {
     RoomInfo room = {};
     
-    if (payload.size() < 4) {
+    if (payload.size() < 10) {
         qWarning() << "Protocol::parseRoomDesc: Payload too short";
         return room;
     }
     
-    int offset = 0;
-    room.roomFlags = readU32(payload, offset); offset += 4;
-    room.facesID = readU32(payload, offset); offset += 4;
-    room.roomId = readI16(payload, offset); offset += 2;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    stream >> room.roomFlags >> room.facesID >> room.roomId;
     
     // Room name is Pascal string
+    int offset = 10;  // After fixed fields (4+4+2)
     room.name = readPascalString(payload, offset);
     
     qDebug() << "Protocol::parseRoomDesc: Room" << room.roomId << room.name;
@@ -184,22 +205,34 @@ QList<RoomInfo> Protocol::parseRoomList(const QByteArray& payload) {
         return rooms;
     }
     
-    int offset = 0;
-    uint32_t roomCount = readU32(payload, offset); offset += 4;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint32 roomCount;
+    stream >> roomCount;
     
     qDebug() << "Protocol::parseRoomList: Parsing" << roomCount << "rooms";
     
+    int offset = 4;  // After room count
     for (uint32_t i = 0; i < roomCount && offset < payload.size(); ++i) {
         RoomInfo room = {};
         
         if (offset + 2 > payload.size()) break;
         
-        room.roomId = readI16(payload, offset); offset += 2;
+        // Read room ID
+        QDataStream roomStream(payload.mid(offset, 2));
+        roomStream.setByteOrder(QDataStream::LittleEndian);
+        roomStream >> room.roomId;
+        offset += 2;
+        
         room.name = readPascalString(payload, offset);
         
         // User count follows name
         if (offset + 2 <= payload.size()) {
-            room.nbrPeople = readI16(payload, offset); offset += 2;
+            QDataStream countStream(payload.mid(offset, 2));
+            countStream.setByteOrder(QDataStream::LittleEndian);
+            countStream >> room.nbrPeople;
+            offset += 2;
         }
         
         rooms.append(room);
@@ -242,7 +275,12 @@ uint32_t Protocol::parseVersion(const QByteArray& payload) {
         return 0;
     }
     
-    uint32_t version = readU32(payload, 0);
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint32 version;
+    stream >> version;
+    
     qDebug() << "Protocol::parseVersion: Server version =" << QString::number(version, 16);
     return version;
 }
@@ -290,10 +328,10 @@ bool Protocol::parseUserMove(const QByteArray& payload, uint32_t& userId, Point&
         return false;
     }
     
-    int offset = 0;
-    userId = readU32(payload, offset); offset += 4;
-    pos.h = readI16(payload, offset); offset += 2;
-    pos.v = readI16(payload, offset); offset += 2;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    stream >> userId >> pos.h >> pos.v;
     
     qDebug() << "Protocol::parseUserMove: User" << userId << "moved to (" << pos.h << "," << pos.v << ")";
     return true;
@@ -305,8 +343,12 @@ bool Protocol::parseUserName(const QByteArray& payload, uint32_t& userId, QStrin
         return false;
     }
     
-    int offset = 0;
-    userId = readU32(payload, offset); offset += 4;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    stream >> userId;
+    
+    int offset = 4;
     name = readPascalString(payload, offset);
     
     qDebug() << "Protocol::parseUserName: User" << userId << "changed name to" << name;
@@ -319,9 +361,10 @@ bool Protocol::parseUserColor(const QByteArray& payload, uint32_t& userId, int16
         return false;
     }
     
-    int offset = 0;
-    userId = readU32(payload, offset); offset += 4;
-    color = readI16(payload, offset); offset += 2;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    stream >> userId >> color;
     
     qDebug() << "Protocol::parseUserColor: User" << userId << "changed color to" << color;
     return true;
@@ -333,9 +376,10 @@ bool Protocol::parseUserFace(const QByteArray& payload, uint32_t& userId, int16_
         return false;
     }
     
-    int offset = 0;
-    userId = readU32(payload, offset); offset += 4;
-    face = readI16(payload, offset); offset += 2;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    stream >> userId >> face;
     
     qDebug() << "Protocol::parseUserFace: User" << userId << "changed face to" << face;
     return true;
@@ -347,18 +391,20 @@ bool Protocol::parseUserProp(const QByteArray& payload, uint32_t& userId, QList<
         return false;
     }
     
-    int offset = 0;
-    userId = readU32(payload, offset); offset += 4;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    stream >> userId;
     
     // Read prop count if present
-    if (offset + 2 <= payload.size()) {
-        int16_t nbrProps = readI16(payload, offset); offset += 2;
+    if (payload.size() >= 6) {
+        qint16 nbrProps;
+        stream >> nbrProps;
         
         // Read each prop (AssetSpec = 8 bytes: id + crc)
-        for (int i = 0; i < nbrProps && offset + 8 <= payload.size(); ++i) {
+        for (int i = 0; i < nbrProps && !stream.atEnd(); ++i) {
             PropSpec prop;
-            prop.spec.id = readU32(payload, offset); offset += 4;
-            prop.spec.crc = readU32(payload, offset); offset += 4;
+            stream >> prop.spec.id >> prop.spec.crc;
             props.append(prop);
         }
     }
@@ -373,9 +419,10 @@ bool Protocol::parseUserStatus(const QByteArray& payload, uint32_t& userId, uint
         return false;
     }
     
-    int offset = 0;
-    userId = readU32(payload, offset); offset += 4;
-    flags = readU16(payload, offset); offset += 2;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    stream >> userId >> flags;
     
     qDebug() << "Protocol::parseUserStatus: User" << userId << "flags =" << QString::number(flags, 16);
     return true;
@@ -390,8 +437,13 @@ ChatMessage Protocol::parseWhisper(const QByteArray& payload) {
         return msg;
     }
     
-    int offset = 0;
-    uint32_t userId = readU32(payload, offset); offset += 4;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint32 userId;
+    stream >> userId;
+    
+    int offset = 4;
     msg.text = readPascalString(payload, offset);
     
     qDebug() << "Protocol::parseWhisper: Whisper from user" << userId << ":" << msg.text;
@@ -460,7 +512,12 @@ uint16_t Protocol::parseSpotDel(const QByteArray& payload) {
         return 0;
     }
     
-    uint16_t spotId = readU16(payload, 0);
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint16 spotId;
+    stream >> spotId;
+    
     qDebug() << "Protocol::parseSpotDel: Hotspot" << spotId << "deleted";
     return spotId;
 }
@@ -477,9 +534,10 @@ bool Protocol::parseSpotState(const QByteArray& payload, uint16_t& spotId, int16
         return false;
     }
     
-    int offset = 0;
-    spotId = readU16(payload, offset); offset += 2;
-    state = readI16(payload, offset); offset += 2;
+    QDataStream stream(payload);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    stream >> spotId >> state;
     
     qDebug() << "Protocol::parseSpotState: Hotspot" << spotId << "state =" << state;
     return true;
@@ -516,31 +574,31 @@ bool Protocol::parsePong(const QByteArray& payload) {
 
 QByteArray Protocol::buildLogon(const QString& username, const QString& wizardPassword) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
     // Header
-    appendU32(msg, static_cast<uint32_t>(MessageType::LOGON));
-    
-    // Reserve space for length (will update later)
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    
-    // RefNum (0 for now)
-    appendU32(msg, 0);
+    stream << static_cast<quint32>(MessageType::LOGON);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     // Payload
     int payloadStart = msg.size();
     
     // Registration record fields (simplified for MVP)
-    appendU32(msg, 0); // regCRC
-    appendU32(msg, 0); // regCounter
+    stream << quint32(0);  // regCRC
+    stream << quint32(0);  // regCounter
     writePascalString(msg, username);
     writePascalString(msg, wizardPassword);
-    appendU32(msg, 0); // ulUploadCaps
-    appendU32(msg, 0); // ulDownloadCaps
+    stream << quint32(0);  // ulUploadCaps
+    stream << quint32(0);  // ulDownloadCaps
     
     // Update length field
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);  // Skip message type
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildLogon: Built logon message for" << username;
     return msg;
@@ -548,18 +606,22 @@ QByteArray Protocol::buildLogon(const QString& username, const QString& wizardPa
 
 QByteArray Protocol::buildTalk(const QString& text) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::TALK));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::TALK);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
     writePascalString(msg, text);
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildTalk: Built talk message:" << text;
     return msg;
@@ -570,8 +632,10 @@ QByteArray Protocol::buildXTalk(const QString& text) {
     // Full implementation needs RC4 encryption
     QByteArray msg = buildTalk(text);
     
-    // Change message type to XTALK
-    *reinterpret_cast<uint32_t*>(msg.data()) = static_cast<uint32_t>(MessageType::XTALK);
+    // Change message type to XTALK using QDataStream
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream << static_cast<quint32>(MessageType::XTALK);
     
     qDebug() << "Protocol::buildXTalk: Built xtalk message (MVP: unencrypted)";
     return msg;
@@ -579,18 +643,22 @@ QByteArray Protocol::buildXTalk(const QString& text) {
 
 QByteArray Protocol::buildRoomGoto(int16_t roomId) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::ROOMGOTO));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::ROOMGOTO);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendI16(msg, roomId);
+    stream << roomId;
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildRoomGoto: Built room goto message for room" << roomId;
     return msg;
@@ -598,10 +666,12 @@ QByteArray Protocol::buildRoomGoto(int16_t roomId) {
 
 QByteArray Protocol::buildListRooms() {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::LISTOFALLROOMS));
-    appendU32(msg, 0); // length (no payload)
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::LISTOFALLROOMS);
+    stream << quint32(0);  // length (no payload)
+    stream << quint32(0);  // refNum
     
     qDebug() << "Protocol::buildListRooms: Built list rooms message";
     return msg;
@@ -609,10 +679,12 @@ QByteArray Protocol::buildListRooms() {
 
 QByteArray Protocol::buildPing() {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::PING));
-    appendU32(msg, 0); // length (no payload)
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::PING);
+    stream << quint32(0);  // length (no payload)
+    stream << quint32(0);  // refNum
     
     qDebug() << "Protocol::buildPing: Built ping message";
     return msg;
@@ -620,10 +692,12 @@ QByteArray Protocol::buildPing() {
 
 QByteArray Protocol::buildPong() {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::PONG));
-    appendU32(msg, 0); // length (no payload)
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::PONG);
+    stream << quint32(0);  // length (no payload)
+    stream << quint32(0);  // refNum
     
     qDebug() << "Protocol::buildPong: Built pong message";
     return msg;
@@ -631,10 +705,12 @@ QByteArray Protocol::buildPong() {
 
 QByteArray Protocol::buildLogoff() {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::LOGOFF));
-    appendU32(msg, 0); // length (no payload)
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::LOGOFF);
+    stream << quint32(0);  // length (no payload)
+    stream << quint32(0);  // refNum
     
     qDebug() << "Protocol::buildLogoff: Built logoff message";
     return msg;
@@ -642,19 +718,22 @@ QByteArray Protocol::buildLogoff() {
 
 QByteArray Protocol::buildUserMove(const Point& pos) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::USERMOVE));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::USERMOVE);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendI16(msg, pos.h);
-    appendI16(msg, pos.v);
+    stream << pos.h << pos.v;
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildUserMove: Moving to (" << pos.h << "," << pos.v << ")";
     return msg;
@@ -662,18 +741,22 @@ QByteArray Protocol::buildUserMove(const Point& pos) {
 
 QByteArray Protocol::buildUserName(const QString& name) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::USERNAME));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::USERNAME);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
     writePascalString(msg, name);
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildUserName: Changing name to" << name;
     return msg;
@@ -681,18 +764,22 @@ QByteArray Protocol::buildUserName(const QString& name) {
 
 QByteArray Protocol::buildUserColor(int16_t color) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::USERCOLOR));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::USERCOLOR);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendI16(msg, color);
+    stream << color;
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildUserColor: Changing color to" << color;
     return msg;
@@ -700,18 +787,22 @@ QByteArray Protocol::buildUserColor(int16_t color) {
 
 QByteArray Protocol::buildUserFace(int16_t face) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::USERFACE));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::USERFACE);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendI16(msg, face);
+    stream << face;
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildUserFace: Changing face to" << face;
     return msg;
@@ -719,24 +810,27 @@ QByteArray Protocol::buildUserFace(int16_t face) {
 
 QByteArray Protocol::buildUserProp(const QList<PropSpec>& props) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::USERPROP));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::USERPROP);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendI16(msg, static_cast<int16_t>(props.size()));
+    stream << static_cast<qint16>(props.size());
     
     // Write each prop (AssetSpec = 8 bytes: id + crc)
     for (const PropSpec& prop : props) {
-        appendU32(msg, prop.spec.id);
-        appendU32(msg, prop.spec.crc);
+        stream << prop.spec.id << prop.spec.crc;
     }
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildUserProp: Setting" << props.size() << "props";
     return msg;
@@ -744,19 +838,23 @@ QByteArray Protocol::buildUserProp(const QList<PropSpec>& props) {
 
 QByteArray Protocol::buildWhisper(uint32_t targetUserId, const QString& text) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::WHISPER));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::WHISPER);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendU32(msg, targetUserId);
+    stream << targetUserId;
     writePascalString(msg, text);
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildWhisper: Whispering to user" << targetUserId << ":" << text;
     return msg;
@@ -764,18 +862,22 @@ QByteArray Protocol::buildWhisper(uint32_t targetUserId, const QString& text) {
 
 QByteArray Protocol::buildGlobalMsg(const QString& text) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::GMSG));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::GMSG);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
     writePascalString(msg, text);
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildGlobalMsg: Global message:" << text;
     return msg;
@@ -783,19 +885,22 @@ QByteArray Protocol::buildGlobalMsg(const QString& text) {
 
 QByteArray Protocol::buildSpotState(uint16_t spotId, int16_t state) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::SPOTSTATE));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::SPOTSTATE);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendU16(msg, spotId);
-    appendI16(msg, state);
+    stream << spotId << state;
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildSpotState: Setting hotspot" << spotId << "to state" << state;
     return msg;
@@ -803,18 +908,22 @@ QByteArray Protocol::buildSpotState(uint16_t spotId, int16_t state) {
 
 QByteArray Protocol::buildDoorLock(uint16_t spotId) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::DOORLOCK));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::DOORLOCK);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendU16(msg, spotId);
+    stream << spotId;
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildDoorLock: Locking door" << spotId;
     return msg;
@@ -822,18 +931,22 @@ QByteArray Protocol::buildDoorLock(uint16_t spotId) {
 
 QByteArray Protocol::buildDoorUnlock(uint16_t spotId) {
     QByteArray msg;
+    QDataStream stream(&msg, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
     
-    appendU32(msg, static_cast<uint32_t>(MessageType::DOORUNLOCK));
-    
-    int lengthPos = msg.size();
-    appendU32(msg, 0);
-    appendU32(msg, 0); // refNum
+    stream << static_cast<quint32>(MessageType::DOORUNLOCK);
+    stream << quint32(0);  // length placeholder
+    stream << quint32(0);  // refNum
     
     int payloadStart = msg.size();
-    appendU16(msg, spotId);
+    stream << spotId;
     
-    uint32_t payloadLen = msg.size() - payloadStart;
-    *reinterpret_cast<uint32_t*>(msg.data() + lengthPos) = payloadLen;
+    // Update length field
+    quint32 payloadLen = msg.size() - payloadStart;
+    QDataStream updateStream(&msg, QIODevice::ReadWrite);
+    updateStream.setByteOrder(QDataStream::LittleEndian);
+    updateStream.skipRawData(4);
+    updateStream << payloadLen;
     
     qDebug() << "Protocol::buildDoorUnlock: Unlocking door" << spotId;
     return msg;

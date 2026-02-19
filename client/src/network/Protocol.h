@@ -388,36 +388,6 @@ private:
     
     // Helper to build message with header
     static QByteArray buildMessage(MessageType type, const QByteArray& payload, uint32_t refNum = 0);
-    
-    // Serialization helpers using QDataStream (handles byte order automatically)
-    template<typename T>
-    static inline T readValue(const QByteArray& data, int offset) {
-        if (offset + sizeof(T) > data.size()) return T{};
-        QDataStream stream(data);
-        stream.setByteOrder(QDataStream::LittleEndian); // Native byte order for client
-        stream.skipRawData(offset);
-        T value;
-        stream >> value;
-        return value;
-    }
-    
-    template<typename T>
-    static inline void appendValue(QByteArray& data, T value) {
-        QDataStream stream(&data, QIODevice::Append);
-        stream.setByteOrder(QDataStream::LittleEndian); // Native byte order for client
-        stream << value;
-    }
-    
-    // Convenience wrappers
-    static inline uint32_t readU32(const QByteArray& data, int offset) { return readValue<quint32>(data, offset); }
-    static inline uint16_t readU16(const QByteArray& data, int offset) { return readValue<quint16>(data, offset); }
-    static inline int32_t readI32(const QByteArray& data, int offset) { return readValue<qint32>(data, offset); }
-    static inline int16_t readI16(const QByteArray& data, int offset) { return readValue<qint16>(data, offset); }
-    
-    static inline void appendU32(QByteArray& data, uint32_t value) { appendValue(data, static_cast<quint32>(value)); }
-    static inline void appendU16(QByteArray& data, uint16_t value) { appendValue(data, static_cast<quint16>(value)); }
-    static inline void appendI32(QByteArray& data, int32_t value) { appendValue(data, static_cast<qint32>(value)); }
-    static inline void appendI16(QByteArray& data, int16_t value) { appendValue(data, static_cast<qint16>(value)); }
 };
 
 } // namespace Network
