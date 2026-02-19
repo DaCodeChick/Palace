@@ -8,6 +8,7 @@
 pub enum Value {
     Integer(i32),
     String(String),
+    Array(Vec<Value>),
 }
 
 impl Value {
@@ -21,11 +22,16 @@ impl Value {
         Value::String(s.into())
     }
 
+    /// Create an array value
+    pub fn array(elements: Vec<Value>) -> Self {
+        Value::Array(elements)
+    }
+
     /// Try to get integer value
     pub const fn as_integer(&self) -> Option<i32> {
         match self {
             Value::Integer(n) => Some(*n),
-            Value::String(_) => None,
+            Value::String(_) | Value::Array(_) => None,
         }
     }
 
@@ -33,7 +39,23 @@ impl Value {
     pub fn as_string(&self) -> Option<&str> {
         match self {
             Value::String(s) => Some(s),
-            Value::Integer(_) => None,
+            Value::Integer(_) | Value::Array(_) => None,
+        }
+    }
+
+    /// Try to get array value
+    pub fn as_array(&self) -> Option<&Vec<Value>> {
+        match self {
+            Value::Array(arr) => Some(arr),
+            Value::Integer(_) | Value::String(_) => None,
+        }
+    }
+
+    /// Try to get mutable array value
+    pub fn as_array_mut(&mut self) -> Option<&mut Vec<Value>> {
+        match self {
+            Value::Array(arr) => Some(arr),
+            Value::Integer(_) | Value::String(_) => None,
         }
     }
 
@@ -42,6 +64,7 @@ impl Value {
         match self {
             Value::Integer(n) => *n,
             Value::String(s) => s.parse().unwrap_or(0),
+            Value::Array(_) => 0,
         }
     }
 
@@ -50,6 +73,7 @@ impl Value {
         match self {
             Value::Integer(n) => *n != 0,
             Value::String(s) => !s.is_empty(),
+            Value::Array(arr) => !arr.is_empty(),
         }
     }
 
@@ -61,6 +85,20 @@ impl Value {
     /// Check if value is a string
     pub const fn is_string(&self) -> bool {
         matches!(self, Value::String(_))
+    }
+
+    /// Check if value is an array
+    pub const fn is_array(&self) -> bool {
+        matches!(self, Value::Array(_))
+    }
+
+    /// Get type name for debugging
+    pub const fn type_name(&self) -> &'static str {
+        match self {
+            Value::Integer(_) => "integer",
+            Value::String(_) => "string",
+            Value::Array(_) => "array",
+        }
     }
 }
 
@@ -87,6 +125,16 @@ impl std::fmt::Display for Value {
         match self {
             Value::Integer(n) => write!(f, "{}", n),
             Value::String(s) => write!(f, "{}", s),
+            Value::Array(arr) => {
+                write!(f, "[")?;
+                for (i, v) in arr.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", v)?;
+                }
+                write!(f, "]")
+            }
         }
     }
 }

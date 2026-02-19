@@ -456,6 +456,40 @@ impl Vm {
                 self.push(value);
                 Ok(())
             }
+            "POP" => {
+                // Alias for DROP
+                self.pop("POP")?;
+                Ok(())
+            }
+            "STACKDEPTH" => {
+                self.push(Value::Integer(self.stack.len() as i32));
+                Ok(())
+            }
+            "TOPTYPE" => {
+                let value = self.peek("TOPTYPE")?;
+                let type_id = match value {
+                    Value::Integer(_) => 1,
+                    Value::String(_) => 2,
+                    Value::Array(_) => 3,
+                };
+                self.push(Value::Integer(type_id));
+                Ok(())
+            }
+            "VARTYPE" => {
+                // Get type of variable - needs variable name from stack
+                let var_name = self.pop("VARTYPE")?.to_string();
+                if let Some(value) = self.variables.get(&var_name) {
+                    let type_id = match value {
+                        Value::Integer(_) => 1,
+                        Value::String(_) => 2,
+                        Value::Array(_) => 3,
+                    };
+                    self.push(Value::Integer(type_id));
+                } else {
+                    self.push(Value::Integer(0)); // Undefined = 0
+                }
+                Ok(())
+            }
             _ => Err(VmError::UndefinedFunction {
                 name: name.to_string(),
             }),
@@ -488,6 +522,60 @@ impl Vm {
             "TOLOWER" => {
                 let value = self.pop("TOLOWER")?;
                 self.push(Value::String(value.to_string().to_lowercase()));
+                Ok(())
+            }
+            "UPPERCASE" => {
+                // Alias for TOUPPER
+                let value = self.pop("UPPERCASE")?;
+                self.push(Value::String(value.to_string().to_uppercase()));
+                Ok(())
+            }
+            "LOWERCASE" => {
+                // Alias for TOLOWER
+                let value = self.pop("LOWERCASE")?;
+                self.push(Value::String(value.to_string().to_lowercase()));
+                Ok(())
+            }
+            "SUBSTR" => {
+                // Search for substring - pushes 1 if found, 0 if not
+                let needle = self.pop("SUBSTR needle")?.to_string();
+                let haystack = self.pop("SUBSTR haystack")?.to_string();
+                let found = if haystack.contains(&needle) { 1 } else { 0 };
+                self.push(Value::Integer(found));
+                Ok(())
+            }
+            "SUBSTRING" => {
+                // Extract substring: string start length -> substring
+                let length = self.pop("SUBSTRING length")?.to_integer();
+                let start = self.pop("SUBSTRING start")?.to_integer();
+                let string = self.pop("SUBSTRING string")?.to_string();
+                
+                if start < 0 || length < 0 {
+                    self.push(Value::String(String::new()));
+                    return Ok(());
+                }
+                
+                let start_idx = start as usize;
+                let length_usize = length as usize;
+                
+                let result = string.chars()
+                    .skip(start_idx)
+                    .take(length_usize)
+                    .collect::<String>();
+                
+                self.push(Value::String(result));
+                Ok(())
+            }
+            "STRINDEX" => {
+                // Find index of substring: haystack needle -> index (or -1 if not found)
+                let needle = self.pop("STRINDEX needle")?.to_string();
+                let haystack = self.pop("STRINDEX haystack")?.to_string();
+                
+                let index = haystack.find(&needle)
+                    .map(|i| i as i32)
+                    .unwrap_or(-1);
+                
+                self.push(Value::Integer(index));
                 Ok(())
             }
             _ => Err(VmError::UndefinedFunction {
@@ -688,6 +776,133 @@ impl Vm {
         }
     }
 
+    /// Execute math built-in functions
+    fn execute_math_builtin(&mut self, name: &str) -> Result<(), VmError> {
+        match name {
+            "RANDOM" => {
+                // RANDOM takes max value from stack, returns random 0..max
+                let max = self.pop("RANDOM")?.to_integer();
+                if max <= 0 {
+                    self.push(Value::Integer(0));
+                } else {
+                    // Simple pseudo-random using instruction count as seed
+                    let random_val = (self.instruction_count as i32 * 1103515245 + 12345) % max;
+                    self.push(Value::Integer(random_val.abs()));
+                }
+                Ok(())
+            }
+            "SQUAREROOT" => {
+                let value = self.pop("SQUAREROOT")?.to_integer();
+                let result = if value >= 0 {
+                    (value as f64).sqrt() as i32
+                } else {
+                    0
+                };
+                self.push(Value::Integer(result));
+                Ok(())
+            }
+            "SINE" => {
+                // Sine in degrees * 1000
+                let degrees = self.pop("SINE")?.to_integer();
+                let radians = (degrees as f64).to_radians();
+                let result = (radians.sin() * 1000.0) as i32;
+                self.push(Value::Integer(result));
+                Ok(())
+            }
+            "COSINE" => {
+                // Cosine in degrees * 1000
+                let degrees = self.pop("COSINE")?.to_integer();
+                let radians = (degrees as f64).to_radians();
+                let result = (radians.cos() * 1000.0) as i32;
+                self.push(Value::Integer(result));
+                Ok(())
+            }
+            "TANGENT" => {
+                // Tangent in degrees * 1000
+                let degrees = self.pop("TANGENT")?.to_integer();
+                let radians = (degrees as f64).to_radians();
+                let result = (radians.tan() * 1000.0) as i32;
+                self.push(Value::Integer(result));
+                Ok(())
+            }
+            _ => Err(VmError::UndefinedFunction {
+                name: name.to_string(),
+            }),
+        }
+    }
+
+    /// Execute array built-in functions
+    fn execute_array_builtin(&mut self, name: &str) -> Result<(), VmError> {
+        match name {
+            "ARRAY" => {
+                // ARRAY takes size from stack, creates array of that size
+                let size = self.pop("ARRAY")?.to_integer();
+                if size < 0 {
+                    return Err(VmError::TypeError {
+                        message: "ARRAY size must be non-negative".to_string(),
+                    });
+                }
+                let arr = vec![Value::Integer(0); size as usize];
+                self.push(Value::Array(arr));
+                Ok(())
+            }
+            "GET" => {
+                // GET: array index -> value
+                let index = self.pop("GET index")?.to_integer();
+                let array = self.pop("GET array")?;
+                
+                if let Some(arr) = array.as_array() {
+                    if index < 0 || index >= arr.len() as i32 {
+                        return Err(VmError::TypeError {
+                            message: format!("Array index {} out of bounds", index),
+                        });
+                    }
+                    self.push(arr[index as usize].clone());
+                } else {
+                    return Err(VmError::TypeError {
+                        message: "GET requires an array".to_string(),
+                    });
+                }
+                Ok(())
+            }
+            "PUT" => {
+                // PUT: array index value -> array (modified)
+                let value = self.pop("PUT value")?;
+                let index = self.pop("PUT index")?.to_integer();
+                let mut array = self.pop("PUT array")?;
+                
+                if let Some(arr) = array.as_array_mut() {
+                    if index < 0 || index >= arr.len() as i32 {
+                        return Err(VmError::TypeError {
+                            message: format!("Array index {} out of bounds", index),
+                        });
+                    }
+                    arr[index as usize] = value;
+                    self.push(array);
+                } else {
+                    return Err(VmError::TypeError {
+                        message: "PUT requires an array".to_string(),
+                    });
+                }
+                Ok(())
+            }
+            "LENGTH" => {
+                // LENGTH: array -> length (also works on strings)
+                let value = self.pop("LENGTH")?;
+                let length = match value {
+                    Value::Array(ref arr) => arr.len() as i32,
+                    Value::String(ref s) => s.len() as i32,
+                    Value::Integer(_) => 0,
+                };
+                self.push(Value::Integer(length));
+                Ok(())
+            }
+            _ => Err(VmError::UndefinedFunction {
+                name: name.to_string(),
+            }),
+        }
+    }
+
     /// Execute a built-in function with optional context
     fn execute_builtin_with_context(
         &mut self,
@@ -706,6 +921,20 @@ impl Vm {
 
         // Try string operations
         match self.execute_string_builtin(name_str) {
+            Ok(()) => return Ok(()),
+            Err(VmError::UndefinedFunction { .. }) => {}
+            Err(e) => return Err(e),
+        }
+
+        // Try math operations
+        match self.execute_math_builtin(name_str) {
+            Ok(()) => return Ok(()),
+            Err(VmError::UndefinedFunction { .. }) => {}
+            Err(e) => return Err(e),
+        }
+
+        // Try array operations
+        match self.execute_array_builtin(name_str) {
             Ok(()) => return Ok(()),
             Err(VmError::UndefinedFunction { .. }) => {}
             Err(e) => return Err(e),
@@ -1262,5 +1491,268 @@ mod tests {
         assert_eq!(actions.props[0].crc, 22222);
         assert_eq!(actions.props[1].id, 300);
         assert_eq!(actions.props[1].crc, 11111);
+    }
+
+    #[test]
+    fn test_phase1_stack_operations() {
+        let mut vm = Vm::new();
+
+        // Test POP (alias for DROP)
+        vm.push(Value::Integer(42));
+        vm.push(Value::Integer(99));
+        vm.execute_builtin_with_context("POP", None).unwrap();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack[0], Value::Integer(42));
+
+        // Test STACKDEPTH
+        vm.push(Value::Integer(1));
+        vm.push(Value::Integer(2));
+        // Stack now has: 42, 1, 2 (3 items)
+        vm.execute_builtin_with_context("STACKDEPTH", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(3));
+
+        // Test TOPTYPE
+        vm.push(Value::Integer(123));
+        vm.execute_builtin_with_context("TOPTYPE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(1)); // 1 = integer
+
+        vm.push(Value::String("test".to_string()));
+        vm.execute_builtin_with_context("TOPTYPE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(2)); // 2 = string
+
+        vm.push(Value::array(vec![Value::Integer(1), Value::Integer(2)]));
+        vm.execute_builtin_with_context("TOPTYPE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(3)); // 3 = array
+
+        // Test VARTYPE
+        vm.set_variable("myint".to_string(), Value::Integer(42));
+        vm.set_variable("mystr".to_string(), Value::String("hello".to_string()));
+        vm.set_variable("myarr".to_string(), Value::array(vec![Value::Integer(1)]));
+
+        vm.push(Value::String("myint".to_string()));
+        vm.execute_builtin_with_context("VARTYPE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(1)); // integer
+
+        vm.push(Value::String("mystr".to_string()));
+        vm.execute_builtin_with_context("VARTYPE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(2)); // string
+
+        vm.push(Value::String("myarr".to_string()));
+        vm.execute_builtin_with_context("VARTYPE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(3)); // array
+
+        // Non-existent variable should return 0
+        vm.push(Value::String("nonexistent".to_string()));
+        vm.execute_builtin_with_context("VARTYPE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(0));
+    }
+
+    #[test]
+    fn test_phase1_string_operations() {
+        let mut vm = Vm::new();
+
+        // Test UPPERCASE (alias for TOUPPER)
+        vm.push(Value::String("hello world".to_string()));
+        vm.execute_builtin_with_context("UPPERCASE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::String("HELLO WORLD".to_string()));
+
+        // Test LOWERCASE (alias for TOLOWER)
+        vm.push(Value::String("HELLO WORLD".to_string()));
+        vm.execute_builtin_with_context("LOWERCASE", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::String("hello world".to_string()));
+
+        // Test SUBSTR - found
+        vm.push(Value::String("hello world".to_string()));
+        vm.push(Value::String("world".to_string()));
+        vm.execute_builtin_with_context("SUBSTR", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(1));
+
+        // Test SUBSTR - not found
+        vm.push(Value::String("hello world".to_string()));
+        vm.push(Value::String("xyz".to_string()));
+        vm.execute_builtin_with_context("SUBSTR", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(0));
+
+        // Test SUBSTRING
+        vm.push(Value::String("hello world".to_string()));
+        vm.push(Value::Integer(6)); // start
+        vm.push(Value::Integer(5)); // length
+        vm.execute_builtin_with_context("SUBSTRING", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::String("world".to_string()));
+
+        // Test STRINDEX - found
+        vm.push(Value::String("hello world".to_string()));
+        vm.push(Value::String("world".to_string()));
+        vm.execute_builtin_with_context("STRINDEX", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(6));
+
+        // Test STRINDEX - not found
+        vm.push(Value::String("hello world".to_string()));
+        vm.push(Value::String("xyz".to_string()));
+        vm.execute_builtin_with_context("STRINDEX", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(-1));
+    }
+
+    #[test]
+    fn test_phase1_math_operations() {
+        let mut vm = Vm::new();
+
+        // Test RANDOM - should return 0..max-1
+        vm.push(Value::Integer(100));
+        vm.execute_builtin_with_context("RANDOM", None).unwrap();
+        let result = vm.pop("test").unwrap();
+        if let Value::Integer(n) = result {
+            assert!(n >= 0 && n < 100);
+        } else {
+            panic!("RANDOM should return an integer");
+        }
+
+        // Test SQUAREROOT
+        vm.push(Value::Integer(16));
+        vm.execute_builtin_with_context("SQUAREROOT", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(4));
+
+        vm.push(Value::Integer(100));
+        vm.execute_builtin_with_context("SQUAREROOT", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(10));
+
+        // Test SINE (returns sine * 1000)
+        vm.push(Value::Integer(0));
+        vm.execute_builtin_with_context("SINE", None).unwrap();
+        let result = vm.pop("test").unwrap();
+        if let Value::Integer(n) = result {
+            assert_eq!(n, 0);
+        }
+
+        vm.push(Value::Integer(90));
+        vm.execute_builtin_with_context("SINE", None).unwrap();
+        let result = vm.pop("test").unwrap();
+        if let Value::Integer(n) = result {
+            assert!((n - 1000).abs() < 10); // Should be close to 1000
+        }
+
+        // Test COSINE (returns cosine * 1000)
+        vm.push(Value::Integer(0));
+        vm.execute_builtin_with_context("COSINE", None).unwrap();
+        let result = vm.pop("test").unwrap();
+        if let Value::Integer(n) = result {
+            assert!((n - 1000).abs() < 10); // Should be close to 1000
+        }
+
+        vm.push(Value::Integer(90));
+        vm.execute_builtin_with_context("COSINE", None).unwrap();
+        let result = vm.pop("test").unwrap();
+        if let Value::Integer(n) = result {
+            assert_eq!(n, 0);
+        }
+
+        // Test TANGENT (returns tangent * 1000)
+        vm.push(Value::Integer(0));
+        vm.execute_builtin_with_context("TANGENT", None).unwrap();
+        let result = vm.pop("test").unwrap();
+        if let Value::Integer(n) = result {
+            assert_eq!(n, 0);
+        }
+
+        vm.push(Value::Integer(45));
+        vm.execute_builtin_with_context("TANGENT", None).unwrap();
+        let result = vm.pop("test").unwrap();
+        if let Value::Integer(n) = result {
+            assert!((n - 1000).abs() < 10); // Should be close to 1000
+        }
+    }
+
+    #[test]
+    fn test_phase1_array_operations() {
+        let mut vm = Vm::new();
+
+        // Test ARRAY
+        vm.push(Value::Integer(5));
+        vm.execute_builtin_with_context("ARRAY", None).unwrap();
+        let arr = vm.pop("test").unwrap();
+        assert!(arr.is_array());
+        if let Value::Array(ref a) = arr {
+            assert_eq!(a.len(), 5);
+            // All elements should be initialized to 0
+            for elem in a {
+                assert_eq!(*elem, Value::Integer(0));
+            }
+        }
+
+        // Test PUT and GET
+        // Create array [0, 0, 0]
+        vm.push(Value::Integer(3));
+        vm.execute_builtin_with_context("ARRAY", None).unwrap();
+        let arr = vm.pop("test").unwrap();
+        
+        // PUT value 42 at index 1
+        vm.push(arr.clone());
+        vm.push(Value::Integer(1));
+        vm.push(Value::Integer(42));
+        vm.execute_builtin_with_context("PUT", None).unwrap();
+        let arr = vm.pop("test").unwrap();
+
+        // GET value at index 1
+        vm.push(arr.clone());
+        vm.push(Value::Integer(1));
+        vm.execute_builtin_with_context("GET", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(42));
+
+        // GET value at index 0 (should still be 0)
+        vm.push(arr.clone());
+        vm.push(Value::Integer(0));
+        vm.execute_builtin_with_context("GET", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(0));
+
+        // Test LENGTH on array
+        vm.push(arr);
+        vm.execute_builtin_with_context("LENGTH", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(3));
+
+        // Test LENGTH on string
+        vm.push(Value::String("hello".to_string()));
+        vm.execute_builtin_with_context("LENGTH", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(5));
+
+        // Test LENGTH on integer (should return 0)
+        vm.push(Value::Integer(42));
+        vm.execute_builtin_with_context("LENGTH", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(0));
+    }
+
+    #[test]
+    fn test_phase1_array_bounds_checking() {
+        let mut vm = Vm::new();
+
+        // Create array of size 3
+        vm.push(Value::Integer(3));
+        vm.execute_builtin_with_context("ARRAY", None).unwrap();
+        let arr = vm.pop("test").unwrap();
+
+        // Try to GET at negative index - should error
+        vm.push(arr.clone());
+        vm.push(Value::Integer(-1));
+        let result = vm.execute_builtin_with_context("GET", None);
+        assert!(matches!(result, Err(VmError::TypeError { .. })));
+
+        // Try to GET at index >= length - should error
+        vm.push(arr.clone());
+        vm.push(Value::Integer(3));
+        let result = vm.execute_builtin_with_context("GET", None);
+        assert!(matches!(result, Err(VmError::TypeError { .. })));
+
+        // Try to PUT at negative index - should error
+        vm.push(arr.clone());
+        vm.push(Value::Integer(-1));
+        vm.push(Value::Integer(42));
+        let result = vm.execute_builtin_with_context("PUT", None);
+        assert!(matches!(result, Err(VmError::TypeError { .. })));
+
+        // Try to PUT at index >= length - should error
+        vm.push(arr.clone());
+        vm.push(Value::Integer(3));
+        vm.push(Value::Integer(42));
+        let result = vm.execute_builtin_with_context("PUT", None);
+        assert!(matches!(result, Err(VmError::TypeError { .. })));
     }
 }
