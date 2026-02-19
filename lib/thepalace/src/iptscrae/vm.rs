@@ -67,7 +67,7 @@ impl std::error::Error for VmError {}
 
 /// Control flow signals
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ControlFlow {
+enum ControlFlow {
     /// Normal execution
     Continue,
     /// Break out of loop
@@ -286,10 +286,6 @@ impl Vm {
     }
 
     /// Execute a block of statements
-    pub fn execute_block(&mut self, block: &Block) -> Result<ControlFlow, VmError> {
-        self.execute_block_with_context(block, None)
-    }
-
     /// Execute a binary operation
     fn execute_binop(&mut self, op: BinOp) -> Result<(), VmError> {
         // Pop operands (note: right operand is popped first due to stack order)
