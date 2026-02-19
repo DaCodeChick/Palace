@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/Main.qml</file>
+        <file>qml/LoginDialog.qml</file>
+        <file>qml/RoomView.qml</file>
+        <file>qml/ChatPanel.qml</file>
+        <file>qml/UserList.qml</file>
+        <file>qml/RoomList.qml</file>
+    </qresource>
+</RCC>
