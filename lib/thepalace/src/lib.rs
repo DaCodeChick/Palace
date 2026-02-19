@@ -311,6 +311,12 @@ cfg_if! {
                 mask.bits() as i32
             }
         }
+        
+        impl Default for EventMask {
+            fn default() -> Self {
+                EventMask::empty()
+            }
+        }
     }
 }
 

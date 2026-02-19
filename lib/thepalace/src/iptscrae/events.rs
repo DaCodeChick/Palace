@@ -135,12 +135,6 @@ impl EventType {
     }
 }
 
-impl Default for EventMask {
-    fn default() -> Self {
-        EventMask::empty()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
