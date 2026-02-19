@@ -81,7 +81,7 @@ impl Point {
     pub fn distance_to(&self, other: &Point) -> f32 {
         let dh = (other.h - self.h) as f32;
         let dv = (other.v - self.v) as f32;
-        (dh * dh + dv * dv).sqrt()
+        dh.hypot(dv)
     }
 
     /// Parse a Point from bytes (v, h order - 4 bytes total)
