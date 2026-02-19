@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 import Palace.Network 1.0
 
 ApplicationWindow {
@@ -119,7 +120,7 @@ ApplicationWindow {
                 onTriggered: {
                     if (session) {
                         session.requestRoomList()
-                        roomListDialog.open()
+                        roomListDialog.show()
                     }
                 }
             }
@@ -139,7 +140,7 @@ ApplicationWindow {
             
             MenuItem {
                 text: "About Palace"
-                onTriggered: aboutDialog.open()
+                onTriggered: aboutDialog.show()
             }
         }
     }
@@ -175,65 +176,264 @@ ApplicationWindow {
     }
     
     // Room List Dialog
-    Dialog {
+    Window {
         id: roomListDialog
         title: "Room List"
-        width: 400
-        height: 500
-        modal: true
+        width: 450
+        height: 550
+        minimumWidth: 400
+        minimumHeight: 500
+        modality: Qt.ApplicationModal
+        flags: Qt.Dialog
+        color: "#1e1e1e"
         
-        contentItem: RoomList {
-            session: root.session
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#2d2d30" }
+                GradientStop { position: 1.0; color: "#1e1e1e" }
+            }
+        }
+        
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 0
             
-            onRoomSelected: function(roomId) {
-                if (session) {
-                    session.goToRoom(roomId)
+            // Header
+            Rectangle {
+                Layout.fillWidth: true
+                height: 60
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#3e3e42" }
+                    GradientStop { position: 1.0; color: "#2d2d30" }
                 }
-                roomListDialog.close()
+                
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 15
+                    spacing: 12
+                    
+                    Rectangle {
+                        width: 32
+                        height: 32
+                        radius: 16
+                        color: "#007acc"
+                        border.color: "#4fc3f7"
+                        border.width: 2
+                        
+                        Label {
+                            anchors.centerIn: parent
+                            text: "🚪"
+                            font.pixelSize: 18
+                        }
+                    }
+                    
+                    Label {
+                        text: "Available Rooms"
+                        font.pixelSize: 18
+                        font.bold: true
+                        color: "#e0e0e0"
+                        Layout.fillWidth: true
+                    }
+                }
+            }
+            
+            // Room list content
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    color: "#252526"
+                    border.color: "#3e3e42"
+                    radius: 6
+                    
+                    RoomList {
+                        anchors.fill: parent
+                        anchors.margins: 1
+                        session: root.session
+                        
+                        onRoomSelected: function(roomId) {
+                            if (session) {
+                                session.goToRoom(roomId)
+                            }
+                            roomListDialog.close()
+                        }
+                    }
+                }
+            }
+            
+            // Button bar
+            Rectangle {
+                Layout.fillWidth: true
+                height: 60
+                color: "#2d2d30"
+                border.color: "#3e3e42"
+                border.width: 1
+                
+                Button {
+                    anchors.centerIn: parent
+                    text: "Close"
+                    width: 100
+                    font.pixelSize: 12
+                    
+                    background: Rectangle {
+                        color: parent.pressed ? "#3e3e42" : parent.hovered ? "#2d2d30" : "#252526"
+                        border.color: "#3e3e42"
+                        border.width: 1
+                        radius: 4
+                    }
+                    
+                    contentItem: Label {
+                        text: parent.text
+                        font: parent.font
+                        color: "#c0c0c0"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    
+                    onClicked: roomListDialog.close()
+                }
             }
         }
     }
     
     // About Dialog
-    Dialog {
+    Window {
         id: aboutDialog
         title: "About Palace Client"
-        width: 400
-        height: 300
-        modal: true
-        standardButtons: Dialog.Ok
+        width: 450
+        height: 380
+        minimumWidth: 400
+        minimumHeight: 350
+        modality: Qt.ApplicationModal
+        flags: Qt.Dialog
+        color: "#1e1e1e"
         
-        contentItem: Item {
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: 20
-                
-                Label {
-                    text: "Palace Client"
-                    font.pixelSize: 24
-                    font.bold: true
-                    Layout.alignment: Qt.AlignHCenter
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#2d2d30" }
+                GradientStop { position: 1.0; color: "#1e1e1e" }
+            }
+        }
+        
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 0
+            
+            // Header with icon
+            Rectangle {
+                Layout.fillWidth: true
+                height: 80
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#3e3e42" }
+                    GradientStop { position: 1.0; color: "#2d2d30" }
                 }
                 
-                Label {
-                    text: "Version 0.1.0"
-                    font.pixelSize: 14
-                    Layout.alignment: Qt.AlignHCenter
-                    color: "#888888"
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 8
+                    
+                    Label {
+                        text: "🏰"
+                        font.pixelSize: 48
+                        Layout.alignment: Qt.AlignHCenter
+                    }
                 }
+            }
+            
+            // Content area
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
                 
-                Label {
-                    text: "A modern implementation of The Palace\nvisual chat system"
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 20
+                    width: parent.width - 40
+                    
+                    Label {
+                        text: "Palace Client"
+                        font.pixelSize: 28
+                        font.bold: true
+                        Layout.alignment: Qt.AlignHCenter
+                        color: "#e0e0e0"
+                    }
+                    
+                    Label {
+                        text: "Version 0.1.0"
+                        font.pixelSize: 16
+                        Layout.alignment: Qt.AlignHCenter
+                        color: "#4fc3f7"
+                    }
+                    
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: "#3e3e42"
+                        Layout.topMargin: 10
+                        Layout.bottomMargin: 10
+                    }
+                    
+                    Label {
+                        text: "A modern implementation of\nThe Palace visual chat system"
+                        font.pixelSize: 13
+                        Layout.alignment: Qt.AlignHCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        color: "#c0c0c0"
+                        lineHeight: 1.4
+                    }
+                    
+                    Label {
+                        text: "Built with Qt 6.10 and C++23"
+                        font.pixelSize: 11
+                        Layout.alignment: Qt.AlignHCenter
+                        color: "#909090"
+                        Layout.topMargin: 10
+                    }
+                    
+                    Label {
+                        text: "© 2026 Palace Project"
+                        font.pixelSize: 10
+                        Layout.alignment: Qt.AlignHCenter
+                        color: "#6a6a6a"
+                    }
+                }
+            }
+            
+            // Button bar
+            Rectangle {
+                Layout.fillWidth: true
+                height: 60
+                color: "#2d2d30"
+                border.color: "#3e3e42"
+                border.width: 1
+                
+                Button {
+                    anchors.centerIn: parent
+                    text: "Close"
+                    width: 100
                     font.pixelSize: 12
-                    Layout.alignment: Qt.AlignHCenter
-                    horizontalAlignment: Text.AlignHCenter
-                }
-                
-                Label {
-                    text: "Built with Qt 6.10 and C++23"
-                    font.pixelSize: 10
-                    Layout.alignment: Qt.AlignHCenter
-                    color: "#888888"
+                    
+                    background: Rectangle {
+                        color: parent.pressed ? "#005a9e" : parent.hovered ? "#1f7bb8" : "#007acc"
+                        border.color: "#4fc3f7"
+                        border.width: 1
+                        radius: 4
+                    }
+                    
+                    contentItem: Label {
+                        text: parent.text
+                        font: parent.font
+                        color: "#ffffff"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    
+                    onClicked: aboutDialog.close()
                 }
             }
         }
