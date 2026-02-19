@@ -1472,6 +1472,42 @@ impl Vm {
         }
     }
 
+    /// Execute logic built-in functions
+    fn execute_logic_builtin(&mut self, name: &str) -> Result<(), VmError> {
+        match name {
+            "AND" => {
+                // AND: a b -> (a AND b)
+                let right = self.pop("AND right")?.to_bool();
+                let left = self.pop("AND left")?.to_bool();
+                self.push(Value::Integer(if left && right { 1 } else { 0 }));
+                Ok(())
+            }
+            "OR" => {
+                // OR: a b -> (a OR b)
+                let right = self.pop("OR right")?.to_bool();
+                let left = self.pop("OR left")?.to_bool();
+                self.push(Value::Integer(if left || right { 1 } else { 0 }));
+                Ok(())
+            }
+            "XOR" => {
+                // XOR: a b -> (a XOR b)
+                let right = self.pop("XOR right")?.to_bool();
+                let left = self.pop("XOR left")?.to_bool();
+                self.push(Value::Integer(if left != right { 1 } else { 0 }));
+                Ok(())
+            }
+            "NOT" => {
+                // NOT: a -> (NOT a)
+                let value = self.pop("NOT")?.to_bool();
+                self.push(Value::Integer(if value { 0 } else { 1 }));
+                Ok(())
+            }
+            _ => Err(VmError::UndefinedFunction {
+                name: name.to_string(),
+            }),
+        }
+    }
+
     /// Execute array built-in functions
     fn execute_array_builtin(&mut self, name: &str) -> Result<(), VmError> {
         match name {
@@ -1569,6 +1605,13 @@ impl Vm {
 
         // Try math operations
         match self.execute_math_builtin(name_str) {
+            Ok(()) => return Ok(()),
+            Err(VmError::UndefinedFunction { .. }) => {}
+            Err(e) => return Err(e),
+        }
+
+        // Try logic operations
+        match self.execute_logic_builtin(name_str) {
             Ok(()) => return Ok(()),
             Err(VmError::UndefinedFunction { .. }) => {}
             Err(e) => return Err(e),
@@ -2443,5 +2486,52 @@ mod tests {
         vm.push(Value::Integer(42));
         let result = vm.execute_builtin_with_context("PUT", None);
         assert!(matches!(result, Err(VmError::TypeError { .. })));
+    }
+
+    #[test]
+    fn test_logic_operations() {
+        let mut vm = Vm::new();
+
+        // Test AND
+        vm.push(Value::Integer(1)); // true
+        vm.push(Value::Integer(1)); // true
+        vm.execute_builtin_with_context("AND", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(1));
+
+        vm.push(Value::Integer(1)); // true
+        vm.push(Value::Integer(0)); // false
+        vm.execute_builtin_with_context("AND", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(0));
+
+        // Test OR
+        vm.push(Value::Integer(0)); // false
+        vm.push(Value::Integer(1)); // true
+        vm.execute_builtin_with_context("OR", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(1));
+
+        vm.push(Value::Integer(0)); // false
+        vm.push(Value::Integer(0)); // false
+        vm.execute_builtin_with_context("OR", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(0));
+
+        // Test XOR
+        vm.push(Value::Integer(1)); // true
+        vm.push(Value::Integer(0)); // false
+        vm.execute_builtin_with_context("XOR", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(1));
+
+        vm.push(Value::Integer(1)); // true
+        vm.push(Value::Integer(1)); // true
+        vm.execute_builtin_with_context("XOR", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(0));
+
+        // Test NOT
+        vm.push(Value::Integer(1)); // true
+        vm.execute_builtin_with_context("NOT", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(0));
+
+        vm.push(Value::Integer(0)); // false
+        vm.execute_builtin_with_context("NOT", None).unwrap();
+        assert_eq!(vm.pop("test").unwrap(), Value::Integer(1));
     }
 }
