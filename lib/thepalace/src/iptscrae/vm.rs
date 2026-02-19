@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use crate::iptscrae::ast::{BinOp, Block, Expr, Script, Statement, UnaryOp};
-use crate::iptscrae::context::ScriptContext;
+use crate::iptscrae::context::{ScriptContext, SecurityLevel};
 use crate::iptscrae::value::Value;
 
 /// VM error types
@@ -706,6 +706,121 @@ impl Vm {
                 }
                 Ok(())
             }
+            // Prop manipulation functions
+            "NAKED" => {
+                // Remove all props
+                if let Some(ctx) = context {
+                    ctx.actions.set_props(Vec::new());
+                }
+                Ok(())
+            }
+            "DONPROP" => {
+                // Add a prop: crc id -> add prop to user
+                let id = self.pop("DONPROP id")?.to_integer();
+                let crc = self.pop("DONPROP crc")?.to_integer();
+                if let Some(ctx) = context {
+                    let mut props = ctx.user_props.clone();
+                    props.push(crate::AssetSpec {
+                        id,
+                        crc: crc as u32,
+                    });
+                    ctx.actions.set_props(props);
+                }
+                Ok(())
+            }
+            "DOFFPROP" => {
+                // Remove a specific prop: id -> remove prop from user
+                let id = self.pop("DOFFPROP id")?.to_integer();
+                if let Some(ctx) = context {
+                    let props: Vec<_> = ctx.user_props.iter()
+                        .filter(|p| p.id != id)
+                        .cloned()
+                        .collect();
+                    ctx.actions.set_props(props);
+                }
+                Ok(())
+            }
+            "DROPPROP" => {
+                // Remove the last prop
+                if let Some(ctx) = context {
+                    let mut props = ctx.user_props.clone();
+                    props.pop();
+                    ctx.actions.set_props(props);
+                }
+                Ok(())
+            }
+            "REMOVEPROP" => {
+                // Alias for DOFFPROP
+                let id = self.pop("REMOVEPROP id")?.to_integer();
+                if let Some(ctx) = context {
+                    let props: Vec<_> = ctx.user_props.iter()
+                        .filter(|p| p.id != id)
+                        .cloned()
+                        .collect();
+                    ctx.actions.set_props(props);
+                }
+                Ok(())
+            }
+            "USERPROP" => {
+                // Get prop at index: index -> crc id
+                let index = self.pop("USERPROP")?.to_integer();
+                if let Some(ctx) = context {
+                    if index >= 0 && (index as usize) < ctx.user_props.len() {
+                        let prop = &ctx.user_props[index as usize];
+                        self.push(Value::Integer(prop.crc as i32));
+                        self.push(Value::Integer(prop.id));
+                    } else {
+                        self.push(Value::Integer(0));
+                        self.push(Value::Integer(0));
+                    }
+                } else {
+                    self.push(Value::Integer(0));
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "NBRUSERPROPS" => {
+                // Get number of props user is wearing
+                if let Some(ctx) = context {
+                    self.push(Value::Integer(ctx.user_props.len() as i32));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "TOPPROP" => {
+                // Get the top (last) prop: -> crc id
+                if let Some(ctx) = context {
+                    if let Some(prop) = ctx.user_props.last() {
+                        self.push(Value::Integer(prop.crc as i32));
+                        self.push(Value::Integer(prop.id));
+                    } else {
+                        self.push(Value::Integer(0));
+                        self.push(Value::Integer(0));
+                    }
+                } else {
+                    self.push(Value::Integer(0));
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "HASPROP" => {
+                // Check if user has a specific prop: id -> boolean
+                let id = self.pop("HASPROP")?.to_integer();
+                if let Some(ctx) = context {
+                    let has_prop = ctx.user_props.iter().any(|p| p.id == id);
+                    self.push(Value::Integer(if has_prop { 1 } else { 0 }));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "MACRO" => {
+                // Execute a macro (prop script) - stub for now
+                let _macro_id = self.pop("MACRO")?.to_integer();
+                // Would need to look up and execute the macro script
+                Ok(())
+            }
             "ROOMNAME" => {
                 if let Some(ctx) = context {
                     self.push(Value::String(ctx.room_name.clone()));
@@ -755,6 +870,231 @@ impl Vm {
                         });
                     }
                     ctx.actions.unlock_door(door_id);
+                }
+                Ok(())
+            }
+            // Position/Movement functions
+            "POSX" => {
+                if let Some(ctx) = context {
+                    self.push(Value::Integer(ctx.user_pos_x as i32));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "POSY" => {
+                if let Some(ctx) = context {
+                    self.push(Value::Integer(ctx.user_pos_y as i32));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "SETPOS" => {
+                let y = self.pop("SETPOS y")?.to_integer();
+                let x = self.pop("SETPOS x")?.to_integer();
+                if let Some(ctx) = context {
+                    ctx.actions.set_pos(x as i16, y as i16);
+                    ctx.user_pos_x = x as i16;
+                    ctx.user_pos_y = y as i16;
+                }
+                Ok(())
+            }
+            "MOVE" => {
+                let dy = self.pop("MOVE dy")?.to_integer();
+                let dx = self.pop("MOVE dx")?.to_integer();
+                if let Some(ctx) = context {
+                    ctx.actions.move_user(dx as i16, dy as i16);
+                    ctx.user_pos_x += dx as i16;
+                    ctx.user_pos_y += dy as i16;
+                }
+                Ok(())
+            }
+            "WHOPOS" => {
+                let user_id = self.pop("WHOPOS")?.to_integer();
+                // For now, return current user's position if ID matches
+                if let Some(ctx) = context {
+                    if user_id == ctx.user_id {
+                        self.push(Value::Integer(ctx.user_pos_x as i32));
+                        self.push(Value::Integer(ctx.user_pos_y as i32));
+                    } else {
+                        // Would need to look up other user's position
+                        self.push(Value::Integer(0));
+                        self.push(Value::Integer(0));
+                    }
+                } else {
+                    self.push(Value::Integer(0));
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            // Room/Navigation functions
+            "GOTOURL" => {
+                let url = self.pop("GOTOURL")?.to_string();
+                if let Some(ctx) = context {
+                    ctx.actions.goto_url(&url);
+                }
+                Ok(())
+            }
+            "GOTOURLFRAME" => {
+                let frame = self.pop("GOTOURLFRAME frame")?.to_string();
+                let url = self.pop("GOTOURLFRAME url")?.to_string();
+                if let Some(ctx) = context {
+                    ctx.actions.goto_url_frame(&url, &frame);
+                }
+                Ok(())
+            }
+            "NETGOTO" => {
+                // NETGOTO: server_name room_id -> navigate to room on another server
+                let room_id = self.pop("NETGOTO room_id")?.to_integer();
+                let server = self.pop("NETGOTO server")?.to_string();
+                // Construct URL and delegate to GOTOURL
+                let url = format!("palace://{}?room={}", server, room_id);
+                if let Some(ctx) = context {
+                    ctx.actions.goto_url(&url);
+                }
+                Ok(())
+            }
+            "NBRROOMUSERS" => {
+                // Number of users in current room - would need room state
+                // For now, return 1 (just the current user)
+                self.push(Value::Integer(1));
+                Ok(())
+            }
+            "ROOMUSER" => {
+                // Get user ID by index in room - would need room state
+                let index = self.pop("ROOMUSER")?.to_integer();
+                if let Some(ctx) = context {
+                    if index == 0 {
+                        self.push(Value::Integer(ctx.user_id));
+                    } else {
+                        self.push(Value::Integer(0));
+                    }
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            // User Info functions
+            "USERID" => {
+                // USERID is an alias for WHOME
+                if let Some(ctx) = context {
+                    self.push(Value::Integer(ctx.user_id));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "WHOCHAT" => {
+                // Get user ID from last chat message - would need event data
+                if let Some(ctx) = context {
+                    if let Some(Value::Integer(user_id)) = ctx.event_data.get("chat_user_id") {
+                        self.push(Value::Integer(*user_id));
+                    } else {
+                        self.push(Value::Integer(ctx.user_id));
+                    }
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "WHOTARGET" => {
+                // Get targeted user ID - would need event data
+                if let Some(ctx) = context {
+                    if let Some(Value::Integer(user_id)) = ctx.event_data.get("target_user_id") {
+                        self.push(Value::Integer(*user_id));
+                    } else {
+                        self.push(Value::Integer(0));
+                    }
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "ISGOD" => {
+                // Check if current user has god/wizard privileges
+                if let Some(ctx) = context {
+                    let is_god = matches!(ctx.security_level, SecurityLevel::Admin);
+                    self.push(Value::Integer(if is_god { 1 } else { 0 }));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "ISWIZARD" => {
+                // Alias for ISGOD
+                if let Some(ctx) = context {
+                    let is_wizard = matches!(ctx.security_level, SecurityLevel::Admin);
+                    self.push(Value::Integer(if is_wizard { 1 } else { 0 }));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "ISGUEST" => {
+                // Check if user is a guest (would need user flags)
+                // For now, return 0 (not a guest)
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "KILLUSER" => {
+                // Disconnect a user - admin only
+                let user_id = self.pop("KILLUSER")?.to_integer();
+                if let Some(ctx) = context {
+                    if !matches!(ctx.security_level, SecurityLevel::Admin) {
+                        return Err(VmError::TypeError {
+                            message: "KILLUSER requires admin privileges".to_string(),
+                        });
+                    }
+                    // Would need server action to disconnect user
+                    // For now, just consume the parameter
+                    let _ = user_id;
+                }
+                Ok(())
+            }
+            // Message functions
+            "SAYAT" => {
+                let y = self.pop("SAYAT y")?.to_integer();
+                let x = self.pop("SAYAT x")?.to_integer();
+                let message = self.pop("SAYAT message")?.to_string();
+                if let Some(ctx) = context {
+                    // SAYAT displays text at a specific position
+                    // Format as special message with coordinates
+                    let msg = format!("@{},{}: {}", x, y, message);
+                    ctx.actions.say(&msg);
+                }
+                Ok(())
+            }
+            "GLOBALMSG" => {
+                let message = self.pop("GLOBALMSG")?.to_string();
+                if let Some(ctx) = context {
+                    ctx.actions.global_msg(&message);
+                }
+                Ok(())
+            }
+            "STATUSMSG" => {
+                let message = self.pop("STATUSMSG")?.to_string();
+                if let Some(ctx) = context {
+                    ctx.actions.status_msg(&message);
+                }
+                Ok(())
+            }
+            "SUSRMSG" => {
+                let message = self.pop("SUSRMSG")?.to_string();
+                if let Some(ctx) = context {
+                    if !matches!(ctx.security_level, SecurityLevel::Admin) {
+                        return Err(VmError::TypeError {
+                            message: "SUSRMSG requires admin privileges".to_string(),
+                        });
+                    }
+                    ctx.actions.superuser_msg(&message);
+                }
+                Ok(())
+            }
+            "LOGMSG" => {
+                let message = self.pop("LOGMSG")?.to_string();
+                if let Some(ctx) = context {
+                    ctx.actions.log_msg(&message);
                 }
                 Ok(())
             }
@@ -1233,6 +1573,14 @@ mod tests {
             fn set_face(&mut self, _face_id: i16) {}
             fn set_color(&mut self, _color: i16) {}
             fn set_props(&mut self, _props: Vec<AssetSpec>) {}
+            fn set_pos(&mut self, _x: i16, _y: i16) {}
+            fn move_user(&mut self, _dx: i16, _dy: i16) {}
+            fn goto_url(&mut self, _url: &str) {}
+            fn goto_url_frame(&mut self, _url: &str, _frame: &str) {}
+            fn global_msg(&mut self, _message: &str) {}
+            fn status_msg(&mut self, _message: &str) {}
+            fn superuser_msg(&mut self, _message: &str) {}
+            fn log_msg(&mut self, _message: &str) {}
         }
 
         // Test a simple greeting script
@@ -1286,6 +1634,14 @@ mod tests {
             fn set_face(&mut self, _face_id: i16) {}
             fn set_color(&mut self, _color: i16) {}
             fn set_props(&mut self, _props: Vec<AssetSpec>) {}
+            fn set_pos(&mut self, _x: i16, _y: i16) {}
+            fn move_user(&mut self, _dx: i16, _dy: i16) {}
+            fn goto_url(&mut self, _url: &str) {}
+            fn goto_url_frame(&mut self, _url: &str, _frame: &str) {}
+            fn global_msg(&mut self, _message: &str) {}
+            fn status_msg(&mut self, _message: &str) {}
+            fn superuser_msg(&mut self, _message: &str) {}
+            fn log_msg(&mut self, _message: &str) {}
         }
 
         // Test a script with variables and arithmetic
@@ -1383,6 +1739,14 @@ mod tests {
             fn set_props(&mut self, props: Vec<AssetSpec>) {
                 self.props = props;
             }
+            fn set_pos(&mut self, _x: i16, _y: i16) {}
+            fn move_user(&mut self, _dx: i16, _dy: i16) {}
+            fn goto_url(&mut self, _url: &str) {}
+            fn goto_url_frame(&mut self, _url: &str, _frame: &str) {}
+            fn global_msg(&mut self, _message: &str) {}
+            fn status_msg(&mut self, _message: &str) {}
+            fn superuser_msg(&mut self, _message: &str) {}
+            fn log_msg(&mut self, _message: &str) {}
         }
 
         // Test SETCOLOR

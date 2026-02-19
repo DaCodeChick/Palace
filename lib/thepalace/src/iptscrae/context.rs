@@ -58,6 +58,30 @@ pub trait ScriptActions {
 
     /// Set user props (SETPROPS).
     fn set_props(&mut self, props: Vec<AssetSpec>);
+
+    /// Set the user's position (SETPOS).
+    fn set_pos(&mut self, x: i16, y: i16);
+
+    /// Move the user relative to current position (MOVE).
+    fn move_user(&mut self, dx: i16, dy: i16);
+
+    /// Navigate to a URL (GOTOURL).
+    fn goto_url(&mut self, url: &str);
+
+    /// Navigate to a URL in a specific frame (GOTOURLFRAME).
+    fn goto_url_frame(&mut self, url: &str, frame: &str);
+
+    /// Send a global message to all users on the server (GLOBALMSG).
+    fn global_msg(&mut self, message: &str);
+
+    /// Send a status message (STATUSMSG).
+    fn status_msg(&mut self, message: &str);
+
+    /// Send a superuser message (SUSRMSG).
+    fn superuser_msg(&mut self, message: &str);
+
+    /// Log a message (LOGMSG).
+    fn log_msg(&mut self, message: &str);
 }
 
 /// Default implementation that does nothing (for testing).
@@ -73,6 +97,14 @@ impl ScriptActions for () {
     fn set_face(&mut self, _face_id: i16) {}
     fn set_color(&mut self, _color: i16) {}
     fn set_props(&mut self, _props: Vec<AssetSpec>) {}
+    fn set_pos(&mut self, _x: i16, _y: i16) {}
+    fn move_user(&mut self, _dx: i16, _dy: i16) {}
+    fn goto_url(&mut self, _url: &str) {}
+    fn goto_url_frame(&mut self, _url: &str, _frame: &str) {}
+    fn global_msg(&mut self, _message: &str) {}
+    fn status_msg(&mut self, _message: &str) {}
+    fn superuser_msg(&mut self, _message: &str) {}
+    fn log_msg(&mut self, _message: &str) {}
 }
 
 /// Execution context for Iptscrae scripts.
@@ -97,6 +129,12 @@ pub struct ScriptContext<'a> {
 
     /// Current user props.
     pub user_props: Vec<AssetSpec>,
+
+    /// Current user position X coordinate.
+    pub user_pos_x: i16,
+
+    /// Current user position Y coordinate.
+    pub user_pos_y: i16,
 
     /// Current room ID.
     pub room_id: i16,
@@ -124,6 +162,8 @@ impl<'a> ScriptContext<'a> {
             user_face: 0,
             user_color: 0,
             user_props: Vec::new(),
+            user_pos_x: 0,
+            user_pos_y: 0,
             room_id: 0,
             room_name: String::new(),
             event_type: EventType::Select,
