@@ -1237,6 +1237,180 @@ impl Vm {
                 // For now, just consume the parameter
                 Ok(())
             }
+            // Server/System functions
+            "SERVERNAME" => {
+                if let Some(ctx) = context {
+                    self.push(Value::String(ctx.server_name.clone()));
+                } else {
+                    self.push(Value::String("localhost".to_string()));
+                }
+                Ok(())
+            }
+            "CLIENTTYPE" => {
+                // Return client type identifier
+                self.push(Value::String("Palace".to_string()));
+                Ok(())
+            }
+            "IPTVERSION" => {
+                // Return Iptscrae version
+                self.push(Value::Integer(1));
+                Ok(())
+            }
+            "DATETIME" => {
+                // Return current datetime as string
+                // Format: "MM/DD/YYYY HH:MM:SS"
+                use std::time::SystemTime;
+                let now = SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
+                self.push(Value::String(format!("{}", now)));
+                Ok(())
+            }
+            "TICKS" => {
+                // Return ticks (milliseconds since start)
+                use std::time::SystemTime;
+                let ticks = SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as i32;
+                self.push(Value::Integer(ticks));
+                Ok(())
+            }
+            "MOUSEPOS" => {
+                // Get mouse position - would need UI state
+                // Push X and Y coordinates
+                self.push(Value::Integer(0));
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "DELAY" => {
+                // Delay execution - not implemented (would need async/timer support)
+                let _milliseconds = self.pop("DELAY")?.to_integer();
+                Ok(())
+            }
+            "DIMROOM" => {
+                // Dim the room - UI effect
+                let _brightness = self.pop("DIMROOM")?.to_integer();
+                Ok(())
+            }
+            "GLOBAL" => {
+                // Access global variable - would need global variable storage
+                let var_name = self.pop("GLOBAL")?.to_string();
+                // For now, treat as regular variable
+                if let Some(value) = self.variables.get(&var_name) {
+                    self.push(value.clone());
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            // Special functions
+            "ME" => {
+                // Return current user ID
+                if let Some(ctx) = context {
+                    self.push(Value::Integer(ctx.user_id));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            "ID" => {
+                // Alias for ME
+                if let Some(ctx) = context {
+                    self.push(Value::Integer(ctx.user_id));
+                } else {
+                    self.push(Value::Integer(0));
+                }
+                Ok(())
+            }
+            // Sound/Media functions
+            "SOUND" => {
+                let sound_id = self.pop("SOUND")?.to_integer();
+                if let Some(ctx) = context {
+                    ctx.actions.play_sound(sound_id);
+                }
+                Ok(())
+            }
+            "MIDIPLAY" => {
+                let midi_id = self.pop("MIDIPLAY")?.to_integer();
+                if let Some(ctx) = context {
+                    ctx.actions.play_midi(midi_id);
+                }
+                Ok(())
+            }
+            "MIDISTOP" => {
+                if let Some(ctx) = context {
+                    ctx.actions.stop_midi();
+                }
+                Ok(())
+            }
+            "BEEP" => {
+                if let Some(ctx) = context {
+                    ctx.actions.beep();
+                }
+                Ok(())
+            }
+            "LAUNCHAPP" => {
+                let url = self.pop("LAUNCHAPP")?.to_string();
+                if let Some(ctx) = context {
+                    ctx.actions.launch_app(&url);
+                }
+                Ok(())
+            }
+            // Painting/Graphics functions (stubs - would need graphics context)
+            "LINE" => {
+                // Draw line: x1 y1 x2 y2 -> draw line
+                let _y2 = self.pop("LINE y2")?.to_integer();
+                let _x2 = self.pop("LINE x2")?.to_integer();
+                let _y1 = self.pop("LINE y1")?.to_integer();
+                let _x1 = self.pop("LINE x1")?.to_integer();
+                Ok(())
+            }
+            "LINETO" => {
+                // Draw line to: x y -> draw line from pen position to x,y
+                let _y = self.pop("LINETO y")?.to_integer();
+                let _x = self.pop("LINETO x")?.to_integer();
+                Ok(())
+            }
+            "PENPOS" => {
+                // Get pen position - push X and Y
+                self.push(Value::Integer(0));
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "PENTO" => {
+                // Set pen position
+                let _y = self.pop("PENTO y")?.to_integer();
+                let _x = self.pop("PENTO x")?.to_integer();
+                Ok(())
+            }
+            "PENSIZE" => {
+                // Set pen size
+                let _size = self.pop("PENSIZE")?.to_integer();
+                Ok(())
+            }
+            "PENCOLOR" => {
+                // Set pen color
+                let _color = self.pop("PENCOLOR")?.to_integer();
+                Ok(())
+            }
+            "PENFRONT" => {
+                // Set pen to draw in front
+                Ok(())
+            }
+            "PENBACK" => {
+                // Set pen to draw in back
+                Ok(())
+            }
+            "PAINTCLEAR" => {
+                // Clear all painting
+                Ok(())
+            }
+            "PAINTUNDO" => {
+                // Undo last painting operation
+                Ok(())
+            }
             _ => Err(VmError::UndefinedFunction {
                 name: name.to_string(),
             }),
@@ -1723,6 +1897,11 @@ mod tests {
             fn set_spot_state(&mut self, _spot_id: i32, _state: i32) {}
             fn add_loose_prop(&mut self, _prop_id: i32, _x: i16, _y: i16) {}
             fn clear_loose_props(&mut self) {}
+            fn play_sound(&mut self, _sound_id: i32) {}
+            fn play_midi(&mut self, _midi_id: i32) {}
+            fn stop_midi(&mut self) {}
+            fn beep(&mut self) {}
+            fn launch_app(&mut self, _url: &str) {}
         }
 
         // Test a simple greeting script
@@ -1787,6 +1966,11 @@ mod tests {
             fn set_spot_state(&mut self, _spot_id: i32, _state: i32) {}
             fn add_loose_prop(&mut self, _prop_id: i32, _x: i16, _y: i16) {}
             fn clear_loose_props(&mut self) {}
+            fn play_sound(&mut self, _sound_id: i32) {}
+            fn play_midi(&mut self, _midi_id: i32) {}
+            fn stop_midi(&mut self) {}
+            fn beep(&mut self) {}
+            fn launch_app(&mut self, _url: &str) {}
         }
 
         // Test a script with variables and arithmetic
@@ -1895,6 +2079,11 @@ mod tests {
             fn set_spot_state(&mut self, _spot_id: i32, _state: i32) {}
             fn add_loose_prop(&mut self, _prop_id: i32, _x: i16, _y: i16) {}
             fn clear_loose_props(&mut self) {}
+            fn play_sound(&mut self, _sound_id: i32) {}
+            fn play_midi(&mut self, _midi_id: i32) {}
+            fn stop_midi(&mut self) {}
+            fn beep(&mut self) {}
+            fn launch_app(&mut self, _url: &str) {}
         }
 
         // Test SETCOLOR

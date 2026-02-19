@@ -91,6 +91,21 @@ pub trait ScriptActions {
 
     /// Clear all loose props from the room (CLEARLOOSEPROPS).
     fn clear_loose_props(&mut self);
+
+    /// Play a sound (SOUND).
+    fn play_sound(&mut self, sound_id: i32);
+
+    /// Play MIDI (MIDIPLAY).
+    fn play_midi(&mut self, midi_id: i32);
+
+    /// Stop MIDI (MIDISTOP).
+    fn stop_midi(&mut self);
+
+    /// Beep (BEEP).
+    fn beep(&mut self);
+
+    /// Launch an application (LAUNCHAPP).
+    fn launch_app(&mut self, url: &str);
 }
 
 /// Default implementation that does nothing (for testing).
@@ -117,6 +132,11 @@ impl ScriptActions for () {
     fn set_spot_state(&mut self, _spot_id: i32, _state: i32) {}
     fn add_loose_prop(&mut self, _prop_id: i32, _x: i16, _y: i16) {}
     fn clear_loose_props(&mut self) {}
+    fn play_sound(&mut self, _sound_id: i32) {}
+    fn play_midi(&mut self, _midi_id: i32) {}
+    fn stop_midi(&mut self) {}
+    fn beep(&mut self) {}
+    fn launch_app(&mut self, _url: &str) {}
 }
 
 /// Execution context for Iptscrae scripts.
@@ -154,6 +174,9 @@ pub struct ScriptContext<'a> {
     /// Current room name.
     pub room_name: String,
 
+    /// Server name.
+    pub server_name: String,
+
     /// Event type that triggered this script.
     pub event_type: EventType,
 
@@ -178,6 +201,7 @@ impl<'a> ScriptContext<'a> {
             user_pos_y: 0,
             room_id: 0,
             room_name: String::new(),
+            server_name: String::new(),
             event_type: EventType::Select,
             event_data: HashMap::new(),
             actions,
