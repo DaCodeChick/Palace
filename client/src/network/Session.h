@@ -94,13 +94,29 @@ private slots:
     void handleMessage(const QByteArray& message);
     void handleTiyid(const QByteArray& payload);
     void handleServerInfo(const QByteArray& payload);
+    void handleVersion(const QByteArray& payload);
+    void handleServerDown(const QByteArray& payload);
     void handleUserNew(const QByteArray& payload);
     void handleUserLeft(const QByteArray& payload);
     void handleUserList(const QByteArray& payload);
+    void handleUserMove(const QByteArray& payload);
+    void handleUserName(const QByteArray& payload);
+    void handleUserColor(const QByteArray& payload);
+    void handleUserFace(const QByteArray& payload);
+    void handleUserProp(const QByteArray& payload);
+    void handleUserStatus(const QByteArray& payload);
     void handleRoomDesc(const QByteArray& payload);
+    void handleRoomDescEnd(const QByteArray& payload);
     void handleRoomList(const QByteArray& payload);
+    void handleNavError(const QByteArray& payload);
     void handleTalk(const QByteArray& payload);
     void handleXTalk(const QByteArray& payload);
+    void handleWhisper(const QByteArray& payload);
+    void handleGlobalMsg(const QByteArray& payload);
+    void handleRoomMsg(const QByteArray& payload);
+    void handleSpotState(const QByteArray& payload);
+    void handleDisplayUrl(const QByteArray& payload);
+    void handlePing(const QByteArray& payload);
     void handlePong(const QByteArray& payload);
 
 private:
