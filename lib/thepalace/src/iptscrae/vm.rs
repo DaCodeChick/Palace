@@ -1720,6 +1720,26 @@ mod tests {
     use super::*;
     use crate::iptscrae::{Lexer, Parser};
 
+    /// Helper: Parse Iptscrae source code into a Script
+    #[allow(dead_code)]
+    fn parse_script(source: &str) -> Result<Script, String> {
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.tokenize().map_err(|e| format!("Lexer error: {:?}", e))?;
+        let mut parser = Parser::new(tokens);
+        parser.parse().map_err(|e| format!("Parser error: {:?}", e))
+    }
+
+    /// Helper: Execute a builtin function with setup
+    fn test_builtin<F>(builtin: &str, setup: F) -> Vm
+    where
+        F: FnOnce(&mut Vm),
+    {
+        let mut vm = Vm::new();
+        setup(&mut vm);
+        vm.execute_builtin_with_context(builtin, None).unwrap();
+        vm
+    }
+
     #[allow(dead_code)]
     fn parse_and_execute(source: &str) -> Result<Vm, VmError> {
         let mut lexer = Lexer::new(source);
@@ -1891,30 +1911,32 @@ mod tests {
 
     #[test]
     fn test_vm_new_builtins() {
-        let mut vm = Vm::new();
-
         // Test PICK
-        vm.push(Value::Integer(1));
-        vm.push(Value::Integer(2));
-        vm.push(Value::Integer(3));
-        vm.push(Value::Integer(1)); // Pick index 1 (should get value 2)
-        vm.execute_builtin_with_context("PICK", None).unwrap();
-        assert_eq!(vm.pop("test").unwrap(), Value::Integer(2));
+        let vm = test_builtin("PICK", |vm| {
+            vm.push(Value::Integer(1));
+            vm.push(Value::Integer(2));
+            vm.push(Value::Integer(3));
+            vm.push(Value::Integer(1)); // Pick index 1 (should get value 2)
+        });
+        assert_eq!(vm.stack().last(), Some(&Value::Integer(2)));
 
         // Test STRLEN
-        vm.push(Value::String("hello".to_string()));
-        vm.execute_builtin_with_context("STRLEN", None).unwrap();
-        assert_eq!(vm.pop("test").unwrap(), Value::Integer(5));
+        let vm = test_builtin("STRLEN", |vm| {
+            vm.push(Value::String("hello".to_string()));
+        });
+        assert_eq!(vm.stack().last(), Some(&Value::Integer(5)));
 
         // Test UPPERCASE
-        vm.push(Value::String("hello".to_string()));
-        vm.execute_builtin_with_context("UPPERCASE", None).unwrap();
-        assert_eq!(vm.pop("test").unwrap(), Value::String("HELLO".to_string()));
+        let vm = test_builtin("UPPERCASE", |vm| {
+            vm.push(Value::String("hello".to_string()));
+        });
+        assert_eq!(vm.stack().last(), Some(&Value::String("HELLO".to_string())));
 
         // Test LOWERCASE
-        vm.push(Value::String("WORLD".to_string()));
-        vm.execute_builtin_with_context("LOWERCASE", None).unwrap();
-        assert_eq!(vm.pop("test").unwrap(), Value::String("world".to_string()));
+        let vm = test_builtin("LOWERCASE", |vm| {
+            vm.push(Value::String("WORLD".to_string()));
+        });
+        assert_eq!(vm.stack().last(), Some(&Value::String("world".to_string())));
     }
 
     #[test]
