@@ -267,7 +267,7 @@ ON ENTER {
 # Interactive hotspot
 ON SELECT {
     "You clicked me!" SAY
-    GETFACE 1 + SETFACE
+    2 SETFACE  # Set to smiling face
 }
 ```
 

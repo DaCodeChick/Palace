@@ -234,7 +234,7 @@ ON ENTER {
 # Interactive hotspot
 ON SELECT {
     "You clicked me!" SAY
-    GETFACE 1 + SETFACE
+    2 SETFACE  # Set to smiling face
 }
 
 # Variable usage
@@ -261,7 +261,7 @@ ON ENTER {
 
 **Arithmetic:**
 - `+`, `-`, `*`, `/`, `MOD`
-- `NEG`, `ABS`
+- Negation via unary operator: `-5`
 
 **Comparison:**
 - `=`, `!=`, `<`, `>`, `<=`, `>=`
@@ -284,14 +284,18 @@ ON ENTER {
 **Palace Functions:**
 - `SAY` - Display message
 - `CHAT` - Send chat
-- `WHISPER` - Private message
-- `WHONAME` - Get username
-- `WHOID` - Get user ID
-- `GETFACE`, `SETFACE` - Avatar face
+- `LOCALMSG` - Message only local user sees
+- `ROOMMSG` - Message everyone in room sees
+- `PRIVATEMSG` - Private message to user (requires userID)
+- `USERNAME` - Get current username
+- `WHOME` - Get current user ID
+- `WHONAME` - Get username for userID (requires userID parameter)
+- `SETFACE` - Set avatar face (0-12)
+- `SETCOLOR` - Set roundhead color (0-15)
 - `GETPROPS`, `SETPROPS` - User props
 - `ROOMNAME`, `ROOMID` - Room info
-- `GOTOROOM` - Navigate
-- `LOCKDOOR`, `UNLOCKDOOR` - Door control
+- `GOTOROOM` - Navigate to room
+- `LOCK`, `UNLOCK` - Door control (requires doorID)
 
 ### Security Model
 
