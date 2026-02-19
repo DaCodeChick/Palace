@@ -28,35 +28,15 @@ include_directories(
 # Source files
 set(SOURCES
     src/main.cpp
-    src/MainWindow.cpp
     src/network/Connection.cpp
     src/network/Protocol.cpp
     src/network/Session.cpp
-    src/graphics/PalaceCanvas.cpp
-    src/graphics/RhiRenderer.cpp
-    src/graphics/SoftwareRenderer.cpp
-    src/graphics/TextureCache.cpp
-    src/ui/models/UserListModel.cpp
-    src/ui/models/RoomListModel.cpp
-    src/ui/models/ChatModel.cpp
-    src/settings/Settings.cpp
-    src/settings/GraphicsSettings.cpp
 )
 
 set(HEADERS
-    src/MainWindow.h
     src/network/Connection.h
     src/network/Protocol.h
     src/network/Session.h
-    src/graphics/PalaceCanvas.h
-    src/graphics/RhiRenderer.h
-    src/graphics/SoftwareRenderer.h
-    src/graphics/TextureCache.h
-    src/ui/models/UserListModel.h
-    src/ui/models/RoomListModel.h
-    src/ui/models/ChatModel.h
-    src/settings/Settings.h
-    src/settings/GraphicsSettings.h
 )
 
 # QML resources

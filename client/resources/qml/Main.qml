@@ -23,7 +23,7 @@ ApplicationWindow {
     // Show login dialog at startup
     Component.onCompleted: {
         if (!isLoggedIn) {
-            loginDialog.open()
+            loginDialog.show()
         }
     }
     
@@ -56,7 +56,7 @@ ApplicationWindow {
                     Button {
                         text: "Connect to Server"
                         Layout.alignment: Qt.AlignHCenter
-                        onClicked: loginDialog.open()
+                        onClicked: loginDialog.show()
                     }
                 }
             }
@@ -89,7 +89,7 @@ ApplicationWindow {
             
             MenuItem {
                 text: "Connect..."
-                onTriggered: loginDialog.open()
+                onTriggered: loginDialog.show()
             }
             
             MenuItem {

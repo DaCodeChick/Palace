@@ -7,6 +7,7 @@
 #include <QString>
 
 namespace Palace {
+namespace Network {
 
 /**
  * @brief TCP connection to Palace server
@@ -20,17 +21,17 @@ class Connection : public QObject
     Q_PROPERTY(QString host READ host WRITE setHost NOTIFY hostChanged)
     Q_PROPERTY(quint16 port READ port WRITE setPort NOTIFY portChanged)
     Q_PROPERTY(bool connected READ isConnected NOTIFY connectedChanged)
-    Q_PROPERTY(QString errorString READ errorString NOTIFY errorOccurred)
+    Q_PROPERTY(QString errorString READ errorString NOTIFY errorStringChanged)
 
 public:
     explicit Connection(QObject *parent = nullptr);
     ~Connection() override;
 
     // Properties
-    QString host() const { return m_host; }
+    QString host() const;
     void setHost(const QString &host);
     
-    quint16 port() const { return m_port; }
+    quint16 port() const;
     void setPort(quint16 port);
     
     bool isConnected() const;
@@ -50,6 +51,7 @@ signals:
     void hostChanged();
     void portChanged();
     void connectedChanged();
+    void errorStringChanged();
     void errorOccurred(const QString &error);
     
     /// Emitted when successfully connected
@@ -62,17 +64,20 @@ signals:
     void dataReceived(const QByteArray &data);
 
 private slots:
-    void onSocketConnected();
-    void onSocketDisconnected();
-    void onSocketError(QAbstractSocket::SocketError error);
-    void onSocketReadyRead();
+    void onConnected();
+    void onDisconnected();
+    void onReadyRead();
+    void onErrorOccurred(QAbstractSocket::SocketError socketError);
 
 private:
     QTcpSocket *m_socket;
     QString m_host;
     quint16 m_port;
+    bool m_connected;
+    QString m_errorString;
 };
 
+} // namespace Network
 } // namespace Palace
 
 #endif // PALACE_CONNECTION_H
