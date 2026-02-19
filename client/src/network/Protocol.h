@@ -3,7 +3,6 @@
 #include <QByteArray>
 #include <QString>
 #include <QList>
-#include <QtEndian>
 #include <cstdint>
 
 namespace Palace {
@@ -388,29 +387,41 @@ private:
     // Helper to build message with header
     static QByteArray buildMessage(MessageType type, const QByteArray& payload, uint32_t refNum = 0);
     
-    // Inline endian helpers that directly use Qt functions
+    // Native byte order helpers - no endian conversion (server handles detection)
     static inline void appendU32(QByteArray& data, uint32_t value) {
-        uchar buf[4];
-        qToBigEndian(value, buf);
-        data.append(reinterpret_cast<const char*>(buf), 4);
+        data.append(reinterpret_cast<const char*>(&value), sizeof(value));
     }
     
     static inline void appendU16(QByteArray& data, uint16_t value) {
-        uchar buf[2];
-        qToBigEndian(value, buf);
-        data.append(reinterpret_cast<const char*>(buf), 2);
+        data.append(reinterpret_cast<const char*>(&value), sizeof(value));
     }
     
     static inline void appendI32(QByteArray& data, int32_t value) {
-        uchar buf[4];
-        qToBigEndian(value, buf);
-        data.append(reinterpret_cast<const char*>(buf), 4);
+        data.append(reinterpret_cast<const char*>(&value), sizeof(value));
     }
     
     static inline void appendI16(QByteArray& data, int16_t value) {
-        uchar buf[2];
-        qToBigEndian(value, buf);
-        data.append(reinterpret_cast<const char*>(buf), 2);
+        data.append(reinterpret_cast<const char*>(&value), sizeof(value));
+    }
+    
+    static inline uint32_t readU32(const QByteArray& data, int offset) {
+        if (offset + 4 > data.size()) return 0;
+        return *reinterpret_cast<const uint32_t*>(data.constData() + offset);
+    }
+    
+    static inline uint16_t readU16(const QByteArray& data, int offset) {
+        if (offset + 2 > data.size()) return 0;
+        return *reinterpret_cast<const uint16_t*>(data.constData() + offset);
+    }
+    
+    static inline int32_t readI32(const QByteArray& data, int offset) {
+        if (offset + 4 > data.size()) return 0;
+        return *reinterpret_cast<const int32_t*>(data.constData() + offset);
+    }
+    
+    static inline int16_t readI16(const QByteArray& data, int offset) {
+        if (offset + 2 > data.size()) return 0;
+        return *reinterpret_cast<const int16_t*>(data.constData() + offset);
     }
 };
 
