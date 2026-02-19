@@ -77,10 +77,8 @@ enum ControlFlow {
 /// VM execution limits for sandboxing
 #[derive(Debug, Clone, Default)]
 pub struct ExecutionLimits {
-    /// Maximum number of instructions to execute
-    pub max_instructions: Option<usize>,
-    /// Maximum execution time
-    pub max_duration: Option<Duration>,
+    max_instructions: Option<usize>,
+    max_duration: Option<Duration>,
 }
 
 impl ExecutionLimits {
@@ -98,6 +96,26 @@ impl ExecutionLimits {
             max_instructions: Some(100_000),
             max_duration: Some(Duration::from_secs(5)),
         }
+    }
+
+    /// Create custom limits with builder pattern
+    pub const fn custom() -> Self {
+        Self {
+            max_instructions: None,
+            max_duration: None,
+        }
+    }
+
+    /// Set maximum number of instructions
+    pub const fn with_max_instructions(mut self, max: usize) -> Self {
+        self.max_instructions = Some(max);
+        self
+    }
+
+    /// Set maximum execution duration
+    pub const fn with_max_duration(mut self, duration: Duration) -> Self {
+        self.max_duration = Some(duration);
+        self
     }
 }
 
@@ -885,10 +903,7 @@ mod tests {
 
     #[test]
     fn test_vm_execution_limits_instructions() {
-        let limits = ExecutionLimits {
-            max_instructions: Some(10),
-            max_duration: None,
-        };
+        let limits = ExecutionLimits::custom().with_max_instructions(10);
         let mut vm = Vm::with_limits(limits);
         vm.start_time = Some(Instant::now());
 
