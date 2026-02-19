@@ -583,6 +583,53 @@ impl Vm {
                 }
                 Ok(())
             }
+            "SETCOLOR" => {
+                let color = self.pop("SETCOLOR")?.to_integer();
+                if let Some(ctx) = context {
+                    ctx.actions.set_color(color as i16);
+                }
+                Ok(())
+            }
+            "GETPROPS" => {
+                if let Some(ctx) = context {
+                    // Push number of props first, then each prop as crc:id
+                    let num_props = ctx.user_props.len() as i32;
+                    self.push(Value::Integer(num_props));
+                    
+                    // Push each prop's CRC and ID
+                    for prop in &ctx.user_props {
+                        self.push(Value::Integer(prop.crc as i32));
+                        self.push(Value::Integer(prop.id));
+                    }
+                } else {
+                    self.push(Value::Integer(0)); // No props
+                }
+                Ok(())
+            }
+            "SETPROPS" => {
+                // Pop number of props
+                let num_props = self.pop("SETPROPS num_props")?.to_integer();
+                if num_props < 0 {
+                    return Err(VmError::TypeError {
+                        message: "SETPROPS num_props must be non-negative".to_string(),
+                    });
+                }
+                
+                let mut props = Vec::new();
+                for _ in 0..num_props {
+                    let id = self.pop("SETPROPS prop id")?.to_integer();
+                    let crc = self.pop("SETPROPS prop crc")?.to_integer();
+                    props.push(crate::AssetSpec {
+                        id,
+                        crc: crc as u32,
+                    });
+                }
+                
+                if let Some(ctx) = context {
+                    ctx.actions.set_props(props);
+                }
+                Ok(())
+            }
             "ROOMNAME" => {
                 if let Some(ctx) = context {
                     self.push(Value::String(ctx.room_name.clone()));
@@ -967,6 +1014,7 @@ mod tests {
             fn lock_door(&mut self, _door_id: i32) {}
             fn unlock_door(&mut self, _door_id: i32) {}
             fn set_face(&mut self, _face_id: i16) {}
+            fn set_color(&mut self, _color: i16) {}
             fn set_props(&mut self, _props: Vec<AssetSpec>) {}
         }
 
@@ -1019,6 +1067,7 @@ mod tests {
             fn lock_door(&mut self, _door_id: i32) {}
             fn unlock_door(&mut self, _door_id: i32) {}
             fn set_face(&mut self, _face_id: i16) {}
+            fn set_color(&mut self, _color: i16) {}
             fn set_props(&mut self, _props: Vec<AssetSpec>) {}
         }
 
@@ -1089,5 +1138,129 @@ mod tests {
         let result = vm.execute_handler(&script, EventType::Select, &mut context);
 
         assert!(matches!(result, Err(VmError::TypeError { .. })));
+    }
+
+    #[test]
+    fn test_vm_props_functions() {
+        use crate::iptscrae::{EventType, Lexer, Parser, ScriptActions, ScriptContext, SecurityLevel};
+        use crate::AssetSpec;
+
+        struct TestActions {
+            color: i16,
+            props: Vec<AssetSpec>,
+        }
+
+        impl ScriptActions for TestActions {
+            fn say(&mut self, _message: &str) {}
+            fn chat(&mut self, _message: &str) {}
+            fn local_msg(&mut self, _message: &str) {}
+            fn room_msg(&mut self, _message: &str) {}
+            fn private_msg(&mut self, _user_id: i32, _message: &str) {}
+            fn goto_room(&mut self, _room_id: i16) {}
+            fn lock_door(&mut self, _door_id: i32) {}
+            fn unlock_door(&mut self, _door_id: i32) {}
+            fn set_face(&mut self, _face_id: i16) {}
+            fn set_color(&mut self, color: i16) {
+                self.color = color;
+            }
+            fn set_props(&mut self, props: Vec<AssetSpec>) {
+                self.props = props;
+            }
+        }
+
+        // Test SETCOLOR
+        let source = r#"
+            ON SELECT {
+                5 SETCOLOR
+            }
+        "#;
+
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let script = parser.parse().unwrap();
+
+        let mut actions = TestActions {
+            color: 0,
+            props: Vec::new(),
+        };
+        {
+            let mut context = ScriptContext::new(SecurityLevel::Server, &mut actions);
+            context.event_type = EventType::Select;
+
+            let mut vm = Vm::new();
+            vm.execute_handler(&script, EventType::Select, &mut context)
+                .unwrap();
+        }
+
+        assert_eq!(actions.color, 5);
+
+        // Test GETPROPS
+        let source = r#"
+            ON SELECT {
+                GETPROPS
+            }
+        "#;
+
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let script = parser.parse().unwrap();
+
+        let mut actions = TestActions {
+            color: 0,
+            props: Vec::new(),
+        };
+        {
+            let mut context = ScriptContext::new(SecurityLevel::Server, &mut actions);
+            context.event_type = EventType::Select;
+            context.user_props = vec![
+                AssetSpec { id: 100, crc: 12345 },
+                AssetSpec { id: 200, crc: 67890 },
+            ];
+
+            let mut vm = Vm::new();
+            vm.execute_handler(&script, EventType::Select, &mut context)
+                .unwrap();
+
+            // Stack should have: num_props, crc1, id1, crc2, id2
+            assert_eq!(vm.stack().len(), 5);
+            assert_eq!(vm.stack()[0], Value::Integer(2)); // num_props
+            assert_eq!(vm.stack()[1], Value::Integer(12345)); // crc1
+            assert_eq!(vm.stack()[2], Value::Integer(100)); // id1
+            assert_eq!(vm.stack()[3], Value::Integer(67890)); // crc2
+            assert_eq!(vm.stack()[4], Value::Integer(200)); // id2
+        }
+
+        // Test SETPROPS
+        let source = r#"
+            ON SELECT {
+                11111 300 22222 400 2 SETPROPS
+            }
+        "#;
+
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let script = parser.parse().unwrap();
+
+        let mut actions = TestActions {
+            color: 0,
+            props: Vec::new(),
+        };
+        {
+            let mut context = ScriptContext::new(SecurityLevel::Server, &mut actions);
+            context.event_type = EventType::Select;
+
+            let mut vm = Vm::new();
+            vm.execute_handler(&script, EventType::Select, &mut context)
+                .unwrap();
+        }
+
+        assert_eq!(actions.props.len(), 2);
+        assert_eq!(actions.props[0].id, 400);
+        assert_eq!(actions.props[0].crc, 22222);
+        assert_eq!(actions.props[1].id, 300);
+        assert_eq!(actions.props[1].crc, 11111);
     }
 }

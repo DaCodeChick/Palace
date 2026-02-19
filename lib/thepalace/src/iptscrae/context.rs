@@ -53,6 +53,9 @@ pub trait ScriptActions {
     /// Set the user's face (SETFACE).
     fn set_face(&mut self, face_id: i16);
 
+    /// Set the user's color (SETCOLOR).
+    fn set_color(&mut self, color: i16);
+
     /// Set user props (SETPROPS).
     fn set_props(&mut self, props: Vec<AssetSpec>);
 }
@@ -68,6 +71,7 @@ impl ScriptActions for () {
     fn lock_door(&mut self, _door_id: i32) {}
     fn unlock_door(&mut self, _door_id: i32) {}
     fn set_face(&mut self, _face_id: i16) {}
+    fn set_color(&mut self, _color: i16) {}
     fn set_props(&mut self, _props: Vec<AssetSpec>) {}
 }
 
@@ -87,6 +91,9 @@ pub struct ScriptContext<'a> {
 
     /// Current user face (avatar) ID.
     pub user_face: i16,
+
+    /// Current user color (roundhead color, 0-15).
+    pub user_color: i16,
 
     /// Current user props.
     pub user_props: Vec<AssetSpec>,
@@ -115,6 +122,7 @@ impl<'a> ScriptContext<'a> {
             user_id: 0,
             user_name: String::new(),
             user_face: 0,
+            user_color: 0,
             user_props: Vec::new(),
             room_id: 0,
             room_name: String::new(),
