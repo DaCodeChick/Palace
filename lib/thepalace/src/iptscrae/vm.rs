@@ -1098,6 +1098,145 @@ impl Vm {
                 }
                 Ok(())
             }
+            // Door Commands
+            "DOORIDX" => {
+                // Get current door index - would need event data
+                if let Some(ctx) = context {
+                    if let Some(Value::Integer(door_id)) = ctx.event_data.get("door_id") {
+                        self.push(Value::Integer(*door_id));
+                    } else {
+                        self.push(Value::Integer(-1));
+                    }
+                } else {
+                    self.push(Value::Integer(-1));
+                }
+                Ok(())
+            }
+            "NBRDOORS" => {
+                // Get number of doors in room - would need room data
+                // For now, return 0
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "DEST" => {
+                // Get destination room ID for a door - would need room data
+                let _door_id = self.pop("DEST")?.to_integer();
+                // For now, return 0
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "ISLOCKED" => {
+                // Check if door is locked - would need room state
+                let _door_id = self.pop("ISLOCKED")?.to_integer();
+                // For now, return 0 (unlocked)
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            // Spot Commands
+            "SPOTIDX" => {
+                // Get current spot index - would need event data
+                if let Some(ctx) = context {
+                    if let Some(Value::Integer(spot_id)) = ctx.event_data.get("spot_id") {
+                        self.push(Value::Integer(*spot_id));
+                    } else {
+                        self.push(Value::Integer(-1));
+                    }
+                } else {
+                    self.push(Value::Integer(-1));
+                }
+                Ok(())
+            }
+            "NBRSPOTS" => {
+                // Get number of spots in room - would need room data
+                // For now, return 0
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "SPOTNAME" => {
+                // Get name of spot by ID - would need room data
+                let _spot_id = self.pop("SPOTNAME")?.to_integer();
+                self.push(Value::String(String::new()));
+                Ok(())
+            }
+            "SPOTDEST" => {
+                // Get destination for spot - would need room data
+                let _spot_id = self.pop("SPOTDEST")?.to_integer();
+                // Returns room_id
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "INSPOT" => {
+                // Check if user is in a specific spot - would need position/spot data
+                let _spot_id = self.pop("INSPOT")?.to_integer();
+                // For now, return 0 (not in spot)
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "GETSPOTSTATE" => {
+                // Get state of a spot
+                let _spot_id = self.pop("GETSPOTSTATE")?.to_integer();
+                // For now, return 0
+                self.push(Value::Integer(0));
+                Ok(())
+            }
+            "SETSPOTSTATE" => {
+                // Set state of a spot (global)
+                let state = self.pop("SETSPOTSTATE state")?.to_integer();
+                let spot_id = self.pop("SETSPOTSTATE spot_id")?.to_integer();
+                if let Some(ctx) = context {
+                    ctx.actions.set_spot_state(spot_id, state);
+                }
+                Ok(())
+            }
+            "SETSPOTSTATELOCAL" => {
+                // Set state of a spot (local to user)
+                let _state = self.pop("SETSPOTSTATELOCAL state")?.to_integer();
+                let _spot_id = self.pop("SETSPOTSTATELOCAL spot_id")?.to_integer();
+                // Would need local state storage
+                Ok(())
+            }
+            "SETLOC" => {
+                // Set location (alias for SETPOS)
+                let y = self.pop("SETLOC y")?.to_integer();
+                let x = self.pop("SETLOC x")?.to_integer();
+                if let Some(ctx) = context {
+                    ctx.actions.set_pos(x as i16, y as i16);
+                    ctx.user_pos_x = x as i16;
+                    ctx.user_pos_y = y as i16;
+                }
+                Ok(())
+            }
+            "SETPICLOC" => {
+                // Set picture location (for drawing) - would need graphics context
+                let _y = self.pop("SETPICLOC y")?.to_integer();
+                let _x = self.pop("SETPICLOC x")?.to_integer();
+                // For now, just consume the parameters
+                Ok(())
+            }
+            // Loose Props
+            "ADDLOOSEPROP" => {
+                // Add a loose prop to the room
+                let y = self.pop("ADDLOOSEPROP y")?.to_integer();
+                let x = self.pop("ADDLOOSEPROP x")?.to_integer();
+                let prop_id = self.pop("ADDLOOSEPROP prop_id")?.to_integer();
+                if let Some(ctx) = context {
+                    ctx.actions.add_loose_prop(prop_id, x as i16, y as i16);
+                }
+                Ok(())
+            }
+            "CLEARLOOSEPROPS" => {
+                // Clear all loose props from room
+                if let Some(ctx) = context {
+                    ctx.actions.clear_loose_props();
+                }
+                Ok(())
+            }
+            "SHOWLOOSEPROPS" => {
+                // Show/hide loose props - would need UI state
+                let _show = self.pop("SHOWLOOSEPROPS")?.to_integer();
+                // For now, just consume the parameter
+                Ok(())
+            }
             _ => Err(VmError::UndefinedFunction {
                 name: name.to_string(),
             }),
@@ -1581,6 +1720,9 @@ mod tests {
             fn status_msg(&mut self, _message: &str) {}
             fn superuser_msg(&mut self, _message: &str) {}
             fn log_msg(&mut self, _message: &str) {}
+            fn set_spot_state(&mut self, _spot_id: i32, _state: i32) {}
+            fn add_loose_prop(&mut self, _prop_id: i32, _x: i16, _y: i16) {}
+            fn clear_loose_props(&mut self) {}
         }
 
         // Test a simple greeting script
@@ -1642,6 +1784,9 @@ mod tests {
             fn status_msg(&mut self, _message: &str) {}
             fn superuser_msg(&mut self, _message: &str) {}
             fn log_msg(&mut self, _message: &str) {}
+            fn set_spot_state(&mut self, _spot_id: i32, _state: i32) {}
+            fn add_loose_prop(&mut self, _prop_id: i32, _x: i16, _y: i16) {}
+            fn clear_loose_props(&mut self) {}
         }
 
         // Test a script with variables and arithmetic
@@ -1747,6 +1892,9 @@ mod tests {
             fn status_msg(&mut self, _message: &str) {}
             fn superuser_msg(&mut self, _message: &str) {}
             fn log_msg(&mut self, _message: &str) {}
+            fn set_spot_state(&mut self, _spot_id: i32, _state: i32) {}
+            fn add_loose_prop(&mut self, _prop_id: i32, _x: i16, _y: i16) {}
+            fn clear_loose_props(&mut self) {}
         }
 
         // Test SETCOLOR

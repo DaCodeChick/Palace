@@ -82,6 +82,15 @@ pub trait ScriptActions {
 
     /// Log a message (LOGMSG).
     fn log_msg(&mut self, message: &str);
+
+    /// Set spot state (SETSPOTSTATE).
+    fn set_spot_state(&mut self, spot_id: i32, state: i32);
+
+    /// Add a loose prop to the room (ADDLOOSEPROP).
+    fn add_loose_prop(&mut self, prop_id: i32, x: i16, y: i16);
+
+    /// Clear all loose props from the room (CLEARLOOSEPROPS).
+    fn clear_loose_props(&mut self);
 }
 
 /// Default implementation that does nothing (for testing).
@@ -105,6 +114,9 @@ impl ScriptActions for () {
     fn status_msg(&mut self, _message: &str) {}
     fn superuser_msg(&mut self, _message: &str) {}
     fn log_msg(&mut self, _message: &str) {}
+    fn set_spot_state(&mut self, _spot_id: i32, _state: i32) {}
+    fn add_loose_prop(&mut self, _prop_id: i32, _x: i16, _y: i16) {}
+    fn clear_loose_props(&mut self) {}
 }
 
 /// Execution context for Iptscrae scripts.
