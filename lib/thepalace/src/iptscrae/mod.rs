@@ -27,6 +27,8 @@ pub mod parser;
 pub mod room_script;
 #[cfg(feature = "room-script")]
 pub mod room_script_parser;
+#[cfg(all(feature = "room-script", feature = "net", feature = "room"))]
+pub mod room_script_converter;
 pub mod token;
 pub mod value;
 pub mod vm;
@@ -40,6 +42,8 @@ pub use parser::{ParseError, Parser};
 pub use room_script::{DoorDecl, PictureDecl, RoomDecl, RoomFlags, SpotDecl, StateDecl};
 #[cfg(feature = "room-script")]
 pub use room_script_parser::RoomScriptParser;
+#[cfg(all(feature = "room-script", feature = "net", feature = "room"))]
+pub use room_script_converter::{convert_room, ConversionError};
 pub use token::{SourcePos, Token, TokenKind};
 pub use value::Value;
 pub use vm::{ExecutionLimits, Vm, VmError};
