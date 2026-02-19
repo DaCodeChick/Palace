@@ -375,14 +375,9 @@ impl Vm {
         Ok(())
     }
 
-    /// Execute a built-in function with optional context
-    fn execute_builtin_with_context(
-        &mut self,
-        name: &str,
-        context: Option<&mut ScriptContext>,
-    ) -> Result<(), VmError> {
-        match name.to_uppercase().as_str() {
-            // Stack operations
+    /// Execute stack manipulation built-in functions
+    fn execute_stack_builtin(&mut self, name: &str) -> Result<(), VmError> {
+        match name {
             "DUP" => {
                 let value = self.peek("DUP")?;
                 self.push(value);
@@ -443,8 +438,15 @@ impl Vm {
                 self.push(value);
                 Ok(())
             }
+            _ => Err(VmError::UndefinedFunction {
+                name: name.to_string(),
+            }),
+        }
+    }
 
-            // String operations
+    /// Execute string manipulation built-in functions
+    fn execute_string_builtin(&mut self, name: &str) -> Result<(), VmError> {
+        match name {
             "ITOA" => {
                 let value = self.pop("ITOA")?;
                 self.push(Value::String(value.to_integer().to_string()));
@@ -470,8 +472,19 @@ impl Vm {
                 self.push(Value::String(value.to_string().to_lowercase()));
                 Ok(())
             }
+            _ => Err(VmError::UndefinedFunction {
+                name: name.to_string(),
+            }),
+        }
+    }
 
-            // Palace operations - require context
+    /// Execute Palace-specific built-in functions
+    fn execute_palace_builtin(
+        &mut self,
+        name: &str,
+        context: Option<&mut ScriptContext>,
+    ) -> Result<(), VmError> {
+        match name {
             "SAY" => {
                 let message = self.pop("SAY")?;
                 if let Some(ctx) = context {
@@ -556,7 +569,7 @@ impl Vm {
                 if let Some(ctx) = context {
                     self.push(Value::String(ctx.room_name.clone()));
                 } else {
-                    self.push(Value::String("".to_string()));
+                    self.push(Value::String(String::new()));
                 }
                 Ok(())
             }
@@ -604,11 +617,37 @@ impl Vm {
                 }
                 Ok(())
             }
-
             _ => Err(VmError::UndefinedFunction {
                 name: name.to_string(),
             }),
         }
+    }
+
+    /// Execute a built-in function with optional context
+    fn execute_builtin_with_context(
+        &mut self,
+        name: &str,
+        context: Option<&mut ScriptContext>,
+    ) -> Result<(), VmError> {
+        let name_upper = name.to_uppercase();
+        let name_str = name_upper.as_str();
+
+        // Try stack operations first (most common)
+        match self.execute_stack_builtin(name_str) {
+            Ok(()) => return Ok(()),
+            Err(VmError::UndefinedFunction { .. }) => {}
+            Err(e) => return Err(e),
+        }
+
+        // Try string operations
+        match self.execute_string_builtin(name_str) {
+            Ok(()) => return Ok(()),
+            Err(VmError::UndefinedFunction { .. }) => {}
+            Err(e) => return Err(e),
+        }
+
+        // Try Palace operations
+        self.execute_palace_builtin(name_str, context)
     }
 
     /// Push a value onto the stack
