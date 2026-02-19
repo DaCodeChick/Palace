@@ -622,19 +622,19 @@ impl Vm {
                 Ok(())
             }
             "USERNAME" => {
-                if let Some(ctx) = context {
-                    self.push(Value::String(ctx.user_name.clone()));
-                } else {
-                    self.push(Value::String("Guest".to_string()));
-                }
+                self.push_from_context_or(
+                    context.as_deref(),
+                    |ctx| Value::String(ctx.user_name.clone()),
+                    || Value::String("Guest".to_string()),
+                );
                 Ok(())
             }
             "WHOME" => {
-                if let Some(ctx) = context {
-                    self.push(Value::Integer(ctx.user_id));
-                } else {
-                    self.push(Value::Integer(0));
-                }
+                self.push_from_context_or(
+                    context.as_deref(),
+                    |ctx| Value::Integer(ctx.user_id),
+                    || Value::Integer(0),
+                );
                 Ok(())
             }
             "WHONAME" => {
@@ -653,17 +653,13 @@ impl Vm {
                 Ok(())
             }
             "SETFACE" => {
-                let face_id = self.pop("SETFACE")?.to_integer();
-                if let Some(ctx) = context {
-                    ctx.actions.set_face(face_id as i16);
-                }
+                let face_id = self.pop("SETFACE")?.to_integer() as i16;
+                self.with_context_action(context, |ctx| ctx.actions.set_face(face_id));
                 Ok(())
             }
             "SETCOLOR" => {
-                let color = self.pop("SETCOLOR")?.to_integer();
-                if let Some(ctx) = context {
-                    ctx.actions.set_color(color as i16);
-                }
+                let color = self.pop("SETCOLOR")?.to_integer() as i16;
+                self.with_context_action(context, |ctx| ctx.actions.set_color(color));
                 Ok(())
             }
             "GETPROPS" => {
@@ -822,19 +818,19 @@ impl Vm {
                 Ok(())
             }
             "ROOMNAME" => {
-                if let Some(ctx) = context {
-                    self.push(Value::String(ctx.room_name.clone()));
-                } else {
-                    self.push(Value::String(String::new()));
-                }
+                self.push_from_context_or(
+                    context.as_deref(),
+                    |ctx| Value::String(ctx.room_name.clone()),
+                    || Value::String(String::new()),
+                );
                 Ok(())
             }
             "ROOMID" => {
-                if let Some(ctx) = context {
-                    self.push(Value::Integer(ctx.room_id as i32));
-                } else {
-                    self.push(Value::Integer(0));
-                }
+                self.push_from_context_or(
+                    context.as_deref(),
+                    |ctx| Value::Integer(ctx.room_id as i32),
+                    || Value::Integer(0),
+                );
                 Ok(())
             }
             "GOTOROOM" => {
@@ -1419,6 +1415,17 @@ impl Vm {
 
     /// Execute math built-in functions
     fn execute_math_builtin(&mut self, name: &str) -> Result<(), VmError> {
+        // Macro for trigonometric functions (SINE, COSINE, TANGENT)
+        macro_rules! trig_builtin {
+            ($name:expr, $func:ident) => {{
+                let degrees = self.pop($name)?.to_integer();
+                let radians = (degrees as f64).to_radians();
+                let result = (radians.$func() * 1000.0) as i32;
+                self.push(Value::Integer(result));
+                Ok(())
+            }};
+        }
+
         match name {
             "RANDOM" => {
                 // RANDOM takes max value from stack, returns random 0..max
@@ -1442,30 +1449,9 @@ impl Vm {
                 self.push(Value::Integer(result));
                 Ok(())
             }
-            "SINE" => {
-                // Sine in degrees * 1000
-                let degrees = self.pop("SINE")?.to_integer();
-                let radians = (degrees as f64).to_radians();
-                let result = (radians.sin() * 1000.0) as i32;
-                self.push(Value::Integer(result));
-                Ok(())
-            }
-            "COSINE" => {
-                // Cosine in degrees * 1000
-                let degrees = self.pop("COSINE")?.to_integer();
-                let radians = (degrees as f64).to_radians();
-                let result = (radians.cos() * 1000.0) as i32;
-                self.push(Value::Integer(result));
-                Ok(())
-            }
-            "TANGENT" => {
-                // Tangent in degrees * 1000
-                let degrees = self.pop("TANGENT")?.to_integer();
-                let radians = (degrees as f64).to_radians();
-                let result = (radians.tan() * 1000.0) as i32;
-                self.push(Value::Integer(result));
-                Ok(())
-            }
+            "SINE" => trig_builtin!("SINE", sin),
+            "COSINE" => trig_builtin!("COSINE", cos),
+            "TANGENT" => trig_builtin!("TANGENT", tan),
             _ => Err(VmError::UndefinedFunction {
                 name: name.to_string(),
             }),
@@ -1695,6 +1681,29 @@ impl Vm {
     /// Clear output buffer
     pub fn clear_output(&mut self) {
         self.output.clear();
+    }
+
+    /// Helper: Push a value from context or a default value
+    fn push_from_context_or<F, D>(&mut self, context: Option<&ScriptContext>, f: F, default: D)
+    where
+        F: FnOnce(&ScriptContext) -> Value,
+        D: FnOnce() -> Value,
+    {
+        if let Some(ctx) = context {
+            self.push(f(ctx));
+        } else {
+            self.push(default());
+        }
+    }
+
+    /// Helper: Execute an action with context if available
+    fn with_context_action<F>(&self, context: Option<&mut ScriptContext>, f: F)
+    where
+        F: FnOnce(&mut ScriptContext),
+    {
+        if let Some(ctx) = context {
+            f(ctx);
+        }
     }
 }
 
