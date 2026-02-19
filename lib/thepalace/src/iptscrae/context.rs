@@ -6,6 +6,7 @@
 
 use crate::iptscrae::events::EventType;
 use crate::iptscrae::value::Value;
+use crate::AssetSpec;
 use std::collections::HashMap;
 
 /// Security level for script execution.
@@ -19,13 +20,6 @@ pub enum SecurityLevel {
     Cyborg,
     /// Administrative scripts with elevated privileges.
     Admin,
-}
-
-/// Prop information for a user.
-#[derive(Debug, Clone, Default)]
-pub struct PropInfo {
-    pub prop_id: i32,
-    pub crc: i32,
 }
 
 /// Actions that scripts can perform.
@@ -60,7 +54,7 @@ pub trait ScriptActions {
     fn set_face(&mut self, face_id: i16);
 
     /// Set user props (SETPROPS).
-    fn set_props(&mut self, props: Vec<PropInfo>);
+    fn set_props(&mut self, props: Vec<AssetSpec>);
 }
 
 /// Default implementation that does nothing (for testing).
@@ -74,7 +68,7 @@ impl ScriptActions for () {
     fn lock_door(&mut self, _door_id: i32) {}
     fn unlock_door(&mut self, _door_id: i32) {}
     fn set_face(&mut self, _face_id: i16) {}
-    fn set_props(&mut self, _props: Vec<PropInfo>) {}
+    fn set_props(&mut self, _props: Vec<AssetSpec>) {}
 }
 
 /// Execution context for Iptscrae scripts.
@@ -95,7 +89,7 @@ pub struct ScriptContext<'a> {
     pub user_face: i16,
 
     /// Current user props.
-    pub user_props: Vec<PropInfo>,
+    pub user_props: Vec<AssetSpec>,
 
     /// Current room ID.
     pub room_id: i16,

@@ -27,7 +27,7 @@ pub mod value;
 pub mod vm;
 
 pub use ast::{BinOp, Block, EventHandler, Expr, Script, Statement, UnaryOp};
-pub use context::{PropInfo, ScriptActions, ScriptContext, SecurityLevel};
+pub use context::{ScriptActions, ScriptContext, SecurityLevel};
 pub use events::{EventMask, EventType};
 pub use lexer::{LexError, Lexer};
 pub use parser::{ParseError, Parser};

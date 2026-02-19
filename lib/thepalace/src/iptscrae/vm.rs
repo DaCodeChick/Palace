@@ -894,7 +894,8 @@ mod tests {
 
     #[test]
     fn test_vm_integration_greeting() {
-        use crate::iptscrae::{EventType, Lexer, Parser, PropInfo, ScriptActions, ScriptContext, SecurityLevel};
+        use crate::iptscrae::{EventType, Lexer, Parser, ScriptActions, ScriptContext, SecurityLevel};
+        use crate::AssetSpec;
 
         // Test action handler that captures SAY output
         struct TestActions {
@@ -912,7 +913,7 @@ mod tests {
             fn lock_door(&mut self, _door_id: i32) {}
             fn unlock_door(&mut self, _door_id: i32) {}
             fn set_face(&mut self, _face_id: i16) {}
-            fn set_props(&mut self, _props: Vec<PropInfo>) {}
+            fn set_props(&mut self, _props: Vec<AssetSpec>) {}
         }
 
         // Test a simple greeting script
@@ -945,7 +946,8 @@ mod tests {
 
     #[test]
     fn test_vm_integration_counter() {
-        use crate::iptscrae::{EventType, Lexer, Parser, PropInfo, ScriptActions, ScriptContext, SecurityLevel};
+        use crate::iptscrae::{EventType, Lexer, Parser, ScriptActions, ScriptContext, SecurityLevel};
+        use crate::AssetSpec;
 
         // Test action handler that captures SAY output
         struct TestActions {
@@ -963,7 +965,7 @@ mod tests {
             fn lock_door(&mut self, _door_id: i32) {}
             fn unlock_door(&mut self, _door_id: i32) {}
             fn set_face(&mut self, _face_id: i16) {}
-            fn set_props(&mut self, _props: Vec<PropInfo>) {}
+            fn set_props(&mut self, _props: Vec<AssetSpec>) {}
         }
 
         // Test a script with variables and arithmetic
