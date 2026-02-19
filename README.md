@@ -22,38 +22,38 @@ The Palace is a 2D graphical chat system where users navigate rooms as avatars, 
 - 💻 **Cross-platform** (Windows, macOS, Linux)
 - 🎯 **Software rendering fallback** for compatibility
 - 🖼️ **Full prop support** with 8-bit format (20/32-bit planned)
-- 📜 **Cyborg script sandboxing** for client-side scripts
+- 🔌 **Native C++ protocol** implementation
 
-### Shared Protocol Library (libthepalace)
-- 📦 **Complete Palace protocol** implementation (60+ message types)
+### Protocol Library (libthepalace)
+- 📦 **Complete Palace protocol** (60+ message types)
 - 🔤 **Iptscrae language** support (lexer, parser, VM)
 - 🖼️ **Asset handling** (props, backgrounds)
 - 🏠 **Room format parsing** (.ipr files)
 - 🔒 **CRC32 and encryption** algorithms
-- 🔗 **C FFI bindings** for C++ client
+- ✨ **Used by Rust server** (client has independent C++ implementation)
 
 ## Architecture
 
 ```
-┌──────────────┐         ┌──────────────┐
-│ Qt C++ Client│◄───────►│ Rust Server  │
-│              │  TCP    │              │
-│ - QML UI     │  9998   │ - Tokio      │
-│ - RHI Graphics│         │ - SQLx       │
-│ - Protocol   │         │ - Iptscrae   │
-└──────┬───────┘         └──────┬───────┘
-       │                        │
-       └────────────┬───────────┘
-                    │
-           ┌────────▼────────┐
-           │  libthepalace   │
-           │  (Rust + FFI)   │
-           │                 │
-           │ - Protocol      │
-           │ - Iptscrae VM   │
-           │ - Prop Format   │
-           │ - CRC32/Crypto  │
-           └─────────────────┘
+┌──────────────────┐         ┌──────────────┐
+│ Qt C++ Client    │◄───────►│ Rust Server  │
+│                  │  TCP    │              │
+│ - QML UI         │  9998   │ - Tokio      │
+│ - RHI Graphics   │         │ - SQLx       │
+│ - Protocol (C++) │         │ - Protocol   │
+│ - Network (Qt)   │         │ - Iptscrae   │
+└──────────────────┘         └──────┬───────┘
+                                    │
+                           ┌────────▼────────┐
+                           │  libthepalace   │
+                           │  (Rust)         │
+                           │                 │
+                           │ - Protocol      │
+                           │ - Iptscrae VM   │
+                           │ - Prop Format   │
+                           │ - CRC32/Crypto  │
+                           └─────────────────┘
+                             (Server only)
 ```
 
 ## Technology Stack
@@ -61,9 +61,9 @@ The Palace is a 2D graphical chat system where users navigate rooms as avatars, 
 | Component | Technologies |
 |-----------|-------------|
 | **Server** | Rust, Tokio, SQLx, SQLite, Tracing |
-| **Client** | C++23, Qt 6.10, QML, Qt RHI |
-| **Protocol** | Rust with C FFI (cbindgen) |
-| **Build** | Cargo + CMake |
+| **Client** | C++23, Qt 6.10, QML, Qt RHI, Qt Network |
+| **Protocol** | Server: Rust (libthepalace), Client: C++ (native) |
+| **Build** | Cargo (server) + CMake (client) |
 
 ## Project Structure
 
@@ -94,11 +94,11 @@ Palace/
 ├── client/                 # C++ Qt client
 │   ├── src/
 │   │   ├── main.cpp
-│   │   ├── network/        # Connection handling
+│   │   ├── network/        # Connection, Protocol, Session
 │   │   ├── graphics/       # Rendering (RHI + Software)
-│   │   ├── ui/             # QML interface
-│   │   └── script/         # Cyborg scripts
-│   └── resources/
+│   │   ├── ui/             # QML interface & models
+│   │   └── settings/       # Settings management
+│   └── resources/          # QML, fonts, icons
 │
 ├── docs/                   # Documentation
 │   ├── ARCHITECTURE.md
@@ -145,6 +145,7 @@ cargo run --release
 
 ```bash
 # From Palace root directory
+cd client
 mkdir build
 cd build
 
@@ -159,6 +160,8 @@ cmake --build . --parallel
 # or
 palace-client.exe  # Windows
 ```
+
+**Note:** The client has a native C++ protocol implementation and does not depend on the Rust library.
 
 ### Development Build
 

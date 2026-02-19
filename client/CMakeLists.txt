@@ -20,32 +20,9 @@ find_package(Qt6 6.10 REQUIRED COMPONENTS
     ShaderTools
 )
 
-# Build thepalace Rust library first
-add_custom_target(thepalace_rust ALL
-    COMMAND cargo build --release --manifest-path 
-            ${CMAKE_SOURCE_DIR}/lib/thepalace/Cargo.toml
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "Building thepalace Rust library"
-)
-
-# Import thepalace as external library
-add_library(thepalace SHARED IMPORTED)
-if(WIN32)
-    set(THEPALACE_LIB "${CMAKE_SOURCE_DIR}/target/release/thepalace.dll")
-elseif(APPLE)
-    set(THEPALACE_LIB "${CMAKE_SOURCE_DIR}/target/release/libthepalace.dylib")
-else()
-    set(THEPALACE_LIB "${CMAKE_SOURCE_DIR}/target/release/libthepalace.so")
-endif()
-
-set_target_properties(thepalace PROPERTIES
-    IMPORTED_LOCATION ${THEPALACE_LIB}
-)
-
 # Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/lib/thepalace/include
 )
 
 # Source files
@@ -94,9 +71,6 @@ add_executable(palace-client
     ${QML_RESOURCES}
 )
 
-# Add dependency on Rust build
-add_dependencies(palace-client thepalace_rust)
-
 # Link libraries
 target_link_libraries(palace-client
     Qt6::Core
@@ -104,7 +78,6 @@ target_link_libraries(palace-client
     Qt6::Quick
     Qt6::Qml
     Qt6::Network
-    thepalace
 )
 
 # Platform-specific settings
@@ -125,12 +98,3 @@ install(TARGETS palace-client
     BUNDLE DESTINATION .
     RUNTIME DESTINATION bin
 )
-
-# Copy thepalace library to output directory
-if(WIN32)
-    add_custom_command(TARGET palace-client POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${THEPALACE_LIB}
-        $<TARGET_FILE_DIR:palace-client>
-    )
-endif()

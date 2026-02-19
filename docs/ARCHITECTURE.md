@@ -11,24 +11,18 @@ The Palace is a visual chat system originally developed in the 1990s. This docum
 │                        Palace System                         │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
-│  ┌──────────────┐         ┌──────────────┐                  │
-│  │ Qt C++ Client│◄───────►│ Rust Server  │                  │
-│  │              │  TCP    │              │                  │
-│  │ - GUI (QML)  │  9998   │ - Tokio      │                  │
-│  │ - Graphics   │         │ - SQLx       │                  │
-│  │ - Protocol   │         │ - Database   │                  │
-│  └──────┬───────┘         └──────┬───────┘                  │
-│         │                        │                           │
-│         │                        │                           │
-│    ┌────▼─────────────────────────▼─────┐                   │
-│    │    libthepalace (Rust + FFI)       │                   │
-│    │                                     │                   │
-│    │  - Protocol Types & Parsing        │                   │
-│    │  - Iptscrae Interpreter            │                   │
-│    │  - Prop Format Handling            │                   │
-│    │  - Room Format Parsing             │                   │
-│    │  - Algorithms (CRC32, Crypto)      │                   │
-│    └────────────────────────────────────┘                   │
+│  ┌──────────────────┐         ┌──────────────┐              │
+│  │ Qt C++ Client    │◄───────►│ Rust Server  │              │
+│  │                  │  TCP    │              │              │
+│  │ - GUI (QML)      │  9998   │ - Tokio      │              │
+│  │ - Graphics       │         │ - SQLx       │              │
+│  │ - Protocol (C++) │         │ - Protocol   │              │
+│  │ - Network        │         │ - Database   │              │
+│  └──────────────────┘         └──────────────┘              │
+│                                                               │
+│  libthepalace (Rust - Server reference implementation)       │
+│  - Protocol message types and parsing                        │
+│  - Used by server only; client has C++ implementation        │
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -39,22 +33,22 @@ The Palace is a visual chat system originally developed in the 1990s. This docum
 - **Language:** Rust (edition 2024)
 - **Async Runtime:** Tokio
 - **Database:** SQLite with SQLx
-- **Migrations:** SQLx migrations
 - **Logging:** tracing + tracing-subscriber
-- **Config:** TOML with serde
+- **Config:** JSON with serde_json
 
 ### Client
 - **Language:** C++23
 - **GUI Framework:** Qt 6.10 with QML
 - **Graphics:** Qt RHI (Vulkan/Direct3D/Metal/OpenGL)
 - **Build System:** CMake 3.21+
-- **Protocol:** FFI to libthepalace
+- **Protocol:** Native C++ implementation
+- **Network:** Qt Network (QTcpSocket)
 
-### Shared Library (libthepalace)
+### libthepalace (Rust - Server Only)
 - **Language:** Rust
 - **Features:** Protocol, Iptscrae, Assets, Room Format
-- **FFI:** C bindings via cbindgen
-- **Build:** Cargo with feature flags
+- **Usage:** Reference implementation used by server
+- **Note:** Client has independent C++ protocol implementation
 
 ## Palace Protocol
 
