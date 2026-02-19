@@ -37,6 +37,9 @@ pub mod assets;
 #[cfg(feature = "room")]
 pub mod room;
 
+#[cfg(feature = "prop")]
+pub mod prop;
+
 pub mod algo;
 
 cfg_if! {

@@ -10,7 +10,7 @@ description = "Palace protocol library - networking, Iptscrae, assets, and room 
 [features]
 default = ["net", "prop", "iptscrae", "assets", "room"]
 net = ["dep:bitflags", "dep:bytes"]
-prop = ["dep:bitflags", "dep:bytes", "dep:flate2", "dep:png"]
+prop = ["net", "dep:flate2", "dep:png"]  # Prop requires net for PropFlags
 iptscrae = []
 room-script = ["iptscrae", "room"]  # Room script parsing requires both iptscrae and room features
 assets = ["dep:png", "dep:flate2"]
