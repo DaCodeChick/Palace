@@ -514,24 +514,12 @@ impl Vm {
                 self.push(Value::Integer(value.to_string().len() as i32));
                 Ok(())
             }
-            "TOUPPER" => {
-                let value = self.pop("TOUPPER")?;
-                self.push(Value::String(value.to_string().to_uppercase()));
-                Ok(())
-            }
-            "TOLOWER" => {
-                let value = self.pop("TOLOWER")?;
-                self.push(Value::String(value.to_string().to_lowercase()));
-                Ok(())
-            }
             "UPPERCASE" => {
-                // Alias for TOUPPER
                 let value = self.pop("UPPERCASE")?;
                 self.push(Value::String(value.to_string().to_uppercase()));
                 Ok(())
             }
             "LOWERCASE" => {
-                // Alias for TOLOWER
                 let value = self.pop("LOWERCASE")?;
                 self.push(Value::String(value.to_string().to_lowercase()));
                 Ok(())
@@ -1211,14 +1199,14 @@ mod tests {
         vm.execute_builtin_with_context("STRLEN", None).unwrap();
         assert_eq!(vm.pop("test").unwrap(), Value::Integer(5));
 
-        // Test TOUPPER
+        // Test UPPERCASE
         vm.push(Value::String("hello".to_string()));
-        vm.execute_builtin_with_context("TOUPPER", None).unwrap();
+        vm.execute_builtin_with_context("UPPERCASE", None).unwrap();
         assert_eq!(vm.pop("test").unwrap(), Value::String("HELLO".to_string()));
 
-        // Test TOLOWER
+        // Test LOWERCASE
         vm.push(Value::String("WORLD".to_string()));
-        vm.execute_builtin_with_context("TOLOWER", None).unwrap();
+        vm.execute_builtin_with_context("LOWERCASE", None).unwrap();
         assert_eq!(vm.pop("test").unwrap(), Value::String("world".to_string()));
     }
 
@@ -1551,12 +1539,12 @@ mod tests {
     fn test_phase1_string_operations() {
         let mut vm = Vm::new();
 
-        // Test UPPERCASE (alias for TOUPPER)
+        // Test UPPERCASE
         vm.push(Value::String("hello world".to_string()));
         vm.execute_builtin_with_context("UPPERCASE", None).unwrap();
         assert_eq!(vm.pop("test").unwrap(), Value::String("HELLO WORLD".to_string()));
 
-        // Test LOWERCASE (alias for TOLOWER)
+        // Test LOWERCASE
         vm.push(Value::String("HELLO WORLD".to_string()));
         vm.execute_builtin_with_context("LOWERCASE", None).unwrap();
         assert_eq!(vm.pop("test").unwrap(), Value::String("hello world".to_string()));
