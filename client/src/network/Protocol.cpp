@@ -9,6 +9,22 @@ Protocol::Protocol() = default;
 Protocol::~Protocol() = default;
 
 // === Byte Order Helpers ===
+//
+// ENDIANNESS APPROACH:
+// Currently using big-endian (network byte order) for all protocol values.
+//
+// The Palace protocol specification supports automatic endianness negotiation:
+// - Client's first message type (TIYID) is sent in client's native byte order
+// - Server examines the bytes: 0x74697972 = big-endian, 0x72796974 (DIYIT) = little-endian
+// - All subsequent protocol messages use the detected endianness
+//
+// CURRENT IMPLEMENTATION: 
+// - Hardcoded to big-endian (standard network byte order)
+// - Works correctly when both client and server use big-endian  
+// - These helper functions wrap Qt's qFromBigEndian/qToBigEndian for clarity
+//
+// FUTURE: If cross-endian support is needed, implement dynamic byte order detection.
+//
 
 uint32_t Protocol::readBigEndianU32(const QByteArray& data, int offset) {
     if (offset + 4 > data.size()) return 0;
