@@ -9,9 +9,9 @@
 use bytes::{Buf, BufMut, Bytes};
 
 use crate::buffer::BufExt;
-use crate::iptscrae::EventMask;
 use crate::messages::flags::RoomFlags;
 use crate::room::{HotspotState, HotspotType};
+use crate::EventMask;
 use crate::{AssetSpec, Point};
 
 /// Loose prop record - describes a prop in the room.
@@ -436,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_hotspot_roundtrip() {
-        use crate::iptscrae::EventMask;
+        use crate::EventMask;
 
         let hotspot = Hotspot {
             script_event_mask: EventMask::SELECT | EventMask::LOCK | EventMask::UNLOCK,

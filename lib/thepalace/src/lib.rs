@@ -232,6 +232,88 @@ impl fmt::Display for AssetType {
     }
 }
 
+#[cfg(any(feature = "net", feature = "iptscrae"))]
+cfg_if! {
+    if #[cfg(feature = "net")] {
+        use bitflags::bitflags;
+        
+        bitflags! {
+            /// Script event mask - bitflags for Iptscrae event types.
+            ///
+            /// Each event type corresponds to a specific Palace action or state change
+            /// that can trigger Iptscrae script execution. This is used in the wire protocol
+            /// for hotspot event masks, so it's defined here rather than in the iptscrae module.
+            ///
+            /// The event mask is stored as a 32-bit integer in the protocol.
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            pub struct EventMask: u32 {
+                /// Hotspot clicked
+                const SELECT = 0x00000001;
+                /// Door locked
+                const LOCK = 0x00000002;
+                /// Door unlocked
+                const UNLOCK = 0x00000004;
+                /// Hotspot hidden
+                const HIDE = 0x00000008;
+                /// Hotspot shown
+                const SHOW = 0x00000010;
+                /// Room startup (server only)
+                const STARTUP = 0x00000020;
+                /// Timer alarm event
+                const ALARM = 0x00000040;
+                /// Custom event triggered by script
+                const CUSTOM = 0x00000080;
+                /// Chat message received
+                const INCHAT = 0x00000100;
+                /// User prop changed
+                const PROPCHANGE = 0x00000200;
+                /// User entered room
+                const ENTER = 0x00000400;
+                /// User left room
+                const LEAVE = 0x00000800;
+                /// Chat message sent (outgoing)
+                const OUTCHAT = 0x00001000;
+                /// User signed on (logged in)
+                const SIGNON = 0x00002000;
+                /// User signed off (logged out)
+                const SIGNOFF = 0x00004000;
+                /// Macro 0
+                const MACRO0 = 0x00008000;
+                /// Macro 1
+                const MACRO1 = 0x00010000;
+                /// Macro 2
+                const MACRO2 = 0x00020000;
+                /// Macro 3
+                const MACRO3 = 0x00040000;
+                /// Macro 4
+                const MACRO4 = 0x00080000;
+                /// Macro 5
+                const MACRO5 = 0x00100000;
+                /// Macro 6
+                const MACRO6 = 0x00200000;
+                /// Macro 7
+                const MACRO7 = 0x00400000;
+                /// Macro 8
+                const MACRO8 = 0x00800000;
+                /// Macro 9
+                const MACRO9 = 0x01000000;
+            }
+        }
+        
+        impl From<i32> for EventMask {
+            fn from(value: i32) -> Self {
+                EventMask::from_bits_truncate(value as u32)
+            }
+        }
+        
+        impl From<EventMask> for i32 {
+            fn from(mask: EventMask) -> Self {
+                mask.bits() as i32
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
