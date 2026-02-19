@@ -8,61 +8,7 @@ namespace Network {
 Protocol::Protocol() = default;
 Protocol::~Protocol() = default;
 
-// === Byte Order Helpers ===
-//
-// ENDIANNESS APPROACH:
-// Currently using big-endian (network byte order) for all protocol values.
-//
-// The Palace protocol specification supports automatic endianness negotiation:
-// - Client's first message type (TIYID) is sent in client's native byte order
-// - Server examines the bytes: 0x74697972 = big-endian, 0x72796974 (DIYIT) = little-endian
-// - All subsequent protocol messages use the detected endianness
-//
-// CURRENT IMPLEMENTATION: 
-// - Hardcoded to big-endian (standard network byte order)
-// - Works correctly when both client and server use big-endian  
-// - These helper functions wrap Qt's qFromBigEndian/qToBigEndian for clarity
-//
-// FUTURE: If cross-endian support is needed, implement dynamic byte order detection.
-//
-
-uint32_t Protocol::readBigEndianU32(const QByteArray& data, int offset) {
-    if (offset + 4 > data.size()) return 0;
-    return qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(data.constData() + offset));
-}
-
-uint16_t Protocol::readBigEndianU16(const QByteArray& data, int offset) {
-    if (offset + 2 > data.size()) return 0;
-    return qFromBigEndian<uint16_t>(reinterpret_cast<const uchar*>(data.constData() + offset));
-}
-
-int32_t Protocol::readBigEndianI32(const QByteArray& data, int offset) {
-    return static_cast<int32_t>(readBigEndianU32(data, offset));
-}
-
-int16_t Protocol::readBigEndianI16(const QByteArray& data, int offset) {
-    return static_cast<int16_t>(readBigEndianU16(data, offset));
-}
-
-void Protocol::writeBigEndianU32(QByteArray& data, uint32_t value) {
-    uchar buf[4];
-    qToBigEndian(value, buf);
-    data.append(reinterpret_cast<char*>(buf), 4);
-}
-
-void Protocol::writeBigEndianU16(QByteArray& data, uint16_t value) {
-    uchar buf[2];
-    qToBigEndian(value, buf);
-    data.append(reinterpret_cast<char*>(buf), 2);
-}
-
-void Protocol::writeBigEndianI32(QByteArray& data, int32_t value) {
-    writeBigEndianU32(data, static_cast<uint32_t>(value));
-}
-
-void Protocol::writeBigEndianI16(QByteArray& data, int16_t value) {
-    writeBigEndianU16(data, static_cast<uint16_t>(value));
-}
+// === String Helpers ===
 
 QString Protocol::readPascalString(const QByteArray& data, int& offset) {
     if (offset >= data.size()) return QString();
@@ -104,9 +50,9 @@ bool Protocol::parseHeader(const QByteArray& data, ProtocolHeader& header) {
         return false;
     }
     
-    header.eventType = readBigEndianU32(data, 0);
-    header.length = readBigEndianU32(data, 4);
-    header.refNum = readBigEndianU32(data, 8);
+    header.eventType = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(data.constData() + 0));
+    header.length = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(data.constData() + 4));
+    header.refNum = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(data.constData() + 8));
     
     qDebug() << "Protocol::parseHeader: type=" << Qt::hex << header.eventType
              << "len=" << Qt::dec << header.length 
@@ -117,7 +63,7 @@ bool Protocol::parseHeader(const QByteArray& data, ProtocolHeader& header) {
 
 MessageType Protocol::identifyMessage(const QByteArray& data) {
     if (data.size() < 4) return static_cast<MessageType>(0);
-    uint32_t type = readBigEndianU32(data, 0);
+    uint32_t type = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(data.constData() + 0));
     return static_cast<MessageType>(type);
 }
 
@@ -128,7 +74,7 @@ uint32_t Protocol::parseTiyid(const QByteArray& payload) {
         return 0;
     }
     
-    uint32_t userId = readBigEndianU32(payload, 0);
+    uint32_t userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + 0));
     qDebug() << "Protocol::parseTiyid: Received UserID =" << userId;
     return userId;
 }
@@ -149,12 +95,12 @@ UserInfo Protocol::parseUserNew(const QByteArray& payload) {
     }
     
     int offset = 0;
-    user.userId = readBigEndianU32(payload, offset); offset += 4;
-    user.roomPos.h = readBigEndianI16(payload, offset); offset += 2;
-    user.roomPos.v = readBigEndianI16(payload, offset); offset += 2;
-    user.roomId = readBigEndianI16(payload, offset); offset += 2;
-    user.faceNbr = readBigEndianI16(payload, offset); offset += 2;
-    user.colorNbr = readBigEndianI16(payload, offset); offset += 2;
+    user.userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+    user.roomPos.h = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+    user.roomPos.v = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+    user.roomId = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+    user.faceNbr = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+    user.colorNbr = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
     
     // Name is Pascal string
     user.name = readPascalString(payload, offset);
@@ -171,7 +117,7 @@ uint32_t Protocol::parseUserExit(const QByteArray& payload) {
         return 0;
     }
     
-    uint32_t userId = readBigEndianU32(payload, 0);
+    uint32_t userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + 0));
     qDebug() << "Protocol::parseUserExit: User" << userId << "left";
     return userId;
 }
@@ -185,7 +131,7 @@ QList<UserInfo> Protocol::parseUserList(const QByteArray& payload) {
     }
     
     int offset = 0;
-    uint32_t userCount = readBigEndianU32(payload, offset); offset += 4;
+    uint32_t userCount = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
     
     qDebug() << "Protocol::parseUserList: Parsing" << userCount << "users";
     
@@ -194,12 +140,12 @@ QList<UserInfo> Protocol::parseUserList(const QByteArray& payload) {
         
         if (offset + 12 > payload.size()) break;
         
-        user.userId = readBigEndianU32(payload, offset); offset += 4;
-        user.roomPos.h = readBigEndianI16(payload, offset); offset += 2;
-        user.roomPos.v = readBigEndianI16(payload, offset); offset += 2;
-        user.roomId = readBigEndianI16(payload, offset); offset += 2;
-        user.faceNbr = readBigEndianI16(payload, offset); offset += 2;
-        user.colorNbr = readBigEndianI16(payload, offset); offset += 2;
+        user.userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+        user.roomPos.h = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+        user.roomPos.v = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+        user.roomId = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+        user.faceNbr = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+        user.colorNbr = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
         
         // Name is Pascal string
         user.name = readPascalString(payload, offset);
@@ -210,7 +156,7 @@ QList<UserInfo> Protocol::parseUserList(const QByteArray& payload) {
     qDebug() << "Protocol::parseUserList: Parsed" << users.size() << "users";
     return users;
 }
-
+    
 RoomInfo Protocol::parseRoomDesc(const QByteArray& payload) {
     RoomInfo room = {};
     
@@ -220,9 +166,9 @@ RoomInfo Protocol::parseRoomDesc(const QByteArray& payload) {
     }
     
     int offset = 0;
-    room.roomFlags = readBigEndianU32(payload, offset); offset += 4;
-    room.facesID = readBigEndianU32(payload, offset); offset += 4;
-    room.roomId = readBigEndianI16(payload, offset); offset += 2;
+    room.roomFlags = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+    room.facesID = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+    room.roomId = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
     
     // Room name is Pascal string
     room.name = readPascalString(payload, offset);
@@ -240,7 +186,7 @@ QList<RoomInfo> Protocol::parseRoomList(const QByteArray& payload) {
     }
     
     int offset = 0;
-    uint32_t roomCount = readBigEndianU32(payload, offset); offset += 4;
+    uint32_t roomCount = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
     
     qDebug() << "Protocol::parseRoomList: Parsing" << roomCount << "rooms";
     
@@ -249,12 +195,12 @@ QList<RoomInfo> Protocol::parseRoomList(const QByteArray& payload) {
         
         if (offset + 2 > payload.size()) break;
         
-        room.roomId = readBigEndianI16(payload, offset); offset += 2;
+        room.roomId = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
         room.name = readPascalString(payload, offset);
         
         // User count follows name
         if (offset + 2 <= payload.size()) {
-            room.nbrPeople = readBigEndianI16(payload, offset); offset += 2;
+            room.nbrPeople = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
         }
         
         rooms.append(room);
@@ -297,7 +243,7 @@ uint32_t Protocol::parseVersion(const QByteArray& payload) {
         return 0;
     }
     
-    uint32_t version = readBigEndianU32(payload, 0);
+    uint32_t version = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + 0));
     qDebug() << "Protocol::parseVersion: Server version =" << QString::number(version, 16);
     return version;
 }
@@ -346,9 +292,9 @@ bool Protocol::parseUserMove(const QByteArray& payload, uint32_t& userId, Point&
     }
     
     int offset = 0;
-    userId = readBigEndianU32(payload, offset); offset += 4;
-    pos.h = readBigEndianI16(payload, offset); offset += 2;
-    pos.v = readBigEndianI16(payload, offset); offset += 2;
+    userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+    pos.h = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+    pos.v = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
     
     qDebug() << "Protocol::parseUserMove: User" << userId << "moved to (" << pos.h << "," << pos.v << ")";
     return true;
@@ -361,7 +307,7 @@ bool Protocol::parseUserName(const QByteArray& payload, uint32_t& userId, QStrin
     }
     
     int offset = 0;
-    userId = readBigEndianU32(payload, offset); offset += 4;
+    userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
     name = readPascalString(payload, offset);
     
     qDebug() << "Protocol::parseUserName: User" << userId << "changed name to" << name;
@@ -375,8 +321,8 @@ bool Protocol::parseUserColor(const QByteArray& payload, uint32_t& userId, int16
     }
     
     int offset = 0;
-    userId = readBigEndianU32(payload, offset); offset += 4;
-    color = readBigEndianI16(payload, offset); offset += 2;
+    userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+    color = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
     
     qDebug() << "Protocol::parseUserColor: User" << userId << "changed color to" << color;
     return true;
@@ -389,8 +335,8 @@ bool Protocol::parseUserFace(const QByteArray& payload, uint32_t& userId, int16_
     }
     
     int offset = 0;
-    userId = readBigEndianU32(payload, offset); offset += 4;
-    face = readBigEndianI16(payload, offset); offset += 2;
+    userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+    face = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
     
     qDebug() << "Protocol::parseUserFace: User" << userId << "changed face to" << face;
     return true;
@@ -403,17 +349,17 @@ bool Protocol::parseUserProp(const QByteArray& payload, uint32_t& userId, QList<
     }
     
     int offset = 0;
-    userId = readBigEndianU32(payload, offset); offset += 4;
+    userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
     
     // Read prop count if present
     if (offset + 2 <= payload.size()) {
-        int16_t nbrProps = readBigEndianI16(payload, offset); offset += 2;
+        int16_t nbrProps = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
         
         // Read each prop (AssetSpec = 8 bytes: id + crc)
         for (int i = 0; i < nbrProps && offset + 8 <= payload.size(); ++i) {
             PropSpec prop;
-            prop.spec.id = readBigEndianU32(payload, offset); offset += 4;
-            prop.spec.crc = readBigEndianU32(payload, offset); offset += 4;
+            prop.spec.id = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+            prop.spec.crc = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
             props.append(prop);
         }
     }
@@ -429,8 +375,8 @@ bool Protocol::parseUserStatus(const QByteArray& payload, uint32_t& userId, uint
     }
     
     int offset = 0;
-    userId = readBigEndianU32(payload, offset); offset += 4;
-    flags = readBigEndianU16(payload, offset); offset += 2;
+    userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
+    flags = qFromBigEndian<uint16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
     
     qDebug() << "Protocol::parseUserStatus: User" << userId << "flags =" << QString::number(flags, 16);
     return true;
@@ -446,7 +392,7 @@ ChatMessage Protocol::parseWhisper(const QByteArray& payload) {
     }
     
     int offset = 0;
-    uint32_t userId = readBigEndianU32(payload, offset); offset += 4;
+    uint32_t userId = qFromBigEndian<uint32_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 4;
     msg.text = readPascalString(payload, offset);
     
     qDebug() << "Protocol::parseWhisper: Whisper from user" << userId << ":" << msg.text;
@@ -515,7 +461,7 @@ uint16_t Protocol::parseSpotDel(const QByteArray& payload) {
         return 0;
     }
     
-    uint16_t spotId = readBigEndianU16(payload, 0);
+    uint16_t spotId = qFromBigEndian<uint16_t>(reinterpret_cast<const uchar*>(payload.constData() + 0));
     qDebug() << "Protocol::parseSpotDel: Hotspot" << spotId << "deleted";
     return spotId;
 }
@@ -533,8 +479,8 @@ bool Protocol::parseSpotState(const QByteArray& payload, uint16_t& spotId, int16
     }
     
     int offset = 0;
-    spotId = readBigEndianU16(payload, offset); offset += 2;
-    state = readBigEndianI16(payload, offset); offset += 2;
+    spotId = qFromBigEndian<uint16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
+    state = qFromBigEndian<int16_t>(reinterpret_cast<const uchar*>(payload.constData() + offset)); offset += 2;
     
     qDebug() << "Protocol::parseSpotState: Hotspot" << spotId << "state =" << state;
     return true;
@@ -573,25 +519,25 @@ QByteArray Protocol::buildLogon(const QString& username, const QString& wizardPa
     QByteArray msg;
     
     // Header
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::LOGON));
+    appendU32(msg, static_cast<uint32_t>(MessageType::LOGON));
     
     // Reserve space for length (will update later)
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
+    appendU32(msg, 0);
     
     // RefNum (0 for now)
-    writeBigEndianU32(msg, 0);
+    appendU32(msg, 0);
     
     // Payload
     int payloadStart = msg.size();
     
     // Registration record fields (simplified for MVP)
-    writeBigEndianU32(msg, 0); // regCRC
-    writeBigEndianU32(msg, 0); // regCounter
+    appendU32(msg, 0); // regCRC
+    appendU32(msg, 0); // regCounter
     writePascalString(msg, username);
     writePascalString(msg, wizardPassword);
-    writeBigEndianU32(msg, 0); // ulUploadCaps
-    writeBigEndianU32(msg, 0); // ulDownloadCaps
+    appendU32(msg, 0); // ulUploadCaps
+    appendU32(msg, 0); // ulDownloadCaps
     
     // Update length field
     uint32_t payloadLen = msg.size() - payloadStart;
@@ -604,11 +550,11 @@ QByteArray Protocol::buildLogon(const QString& username, const QString& wizardPa
 QByteArray Protocol::buildTalk(const QString& text) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::TALK));
+    appendU32(msg, static_cast<uint32_t>(MessageType::TALK));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
     writePascalString(msg, text);
@@ -636,14 +582,14 @@ QByteArray Protocol::buildXTalk(const QString& text) {
 QByteArray Protocol::buildRoomGoto(int16_t roomId) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::ROOMGOTO));
+    appendU32(msg, static_cast<uint32_t>(MessageType::ROOMGOTO));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianI16(msg, roomId);
+    appendI16(msg, roomId);
     
     uint32_t payloadLen = msg.size() - payloadStart;
     qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
@@ -655,9 +601,9 @@ QByteArray Protocol::buildRoomGoto(int16_t roomId) {
 QByteArray Protocol::buildListRooms() {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::LISTOFALLROOMS));
-    writeBigEndianU32(msg, 0); // length (no payload)
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, static_cast<uint32_t>(MessageType::LISTOFALLROOMS));
+    appendU32(msg, 0); // length (no payload)
+    appendU32(msg, 0); // refNum
     
     qDebug() << "Protocol::buildListRooms: Built list rooms message";
     return msg;
@@ -666,9 +612,9 @@ QByteArray Protocol::buildListRooms() {
 QByteArray Protocol::buildPing() {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::PING));
-    writeBigEndianU32(msg, 0); // length (no payload)
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, static_cast<uint32_t>(MessageType::PING));
+    appendU32(msg, 0); // length (no payload)
+    appendU32(msg, 0); // refNum
     
     qDebug() << "Protocol::buildPing: Built ping message";
     return msg;
@@ -677,9 +623,9 @@ QByteArray Protocol::buildPing() {
 QByteArray Protocol::buildPong() {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::PONG));
-    writeBigEndianU32(msg, 0); // length (no payload)
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, static_cast<uint32_t>(MessageType::PONG));
+    appendU32(msg, 0); // length (no payload)
+    appendU32(msg, 0); // refNum
     
     qDebug() << "Protocol::buildPong: Built pong message";
     return msg;
@@ -688,9 +634,9 @@ QByteArray Protocol::buildPong() {
 QByteArray Protocol::buildLogoff() {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::LOGOFF));
-    writeBigEndianU32(msg, 0); // length (no payload)
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, static_cast<uint32_t>(MessageType::LOGOFF));
+    appendU32(msg, 0); // length (no payload)
+    appendU32(msg, 0); // refNum
     
     qDebug() << "Protocol::buildLogoff: Built logoff message";
     return msg;
@@ -699,15 +645,15 @@ QByteArray Protocol::buildLogoff() {
 QByteArray Protocol::buildUserMove(const Point& pos) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERMOVE));
+    appendU32(msg, static_cast<uint32_t>(MessageType::USERMOVE));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianI16(msg, pos.h);
-    writeBigEndianI16(msg, pos.v);
+    appendI16(msg, pos.h);
+    appendI16(msg, pos.v);
     
     uint32_t payloadLen = msg.size() - payloadStart;
     qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
@@ -719,11 +665,11 @@ QByteArray Protocol::buildUserMove(const Point& pos) {
 QByteArray Protocol::buildUserName(const QString& name) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERNAME));
+    appendU32(msg, static_cast<uint32_t>(MessageType::USERNAME));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
     writePascalString(msg, name);
@@ -738,14 +684,14 @@ QByteArray Protocol::buildUserName(const QString& name) {
 QByteArray Protocol::buildUserColor(int16_t color) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERCOLOR));
+    appendU32(msg, static_cast<uint32_t>(MessageType::USERCOLOR));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianI16(msg, color);
+    appendI16(msg, color);
     
     uint32_t payloadLen = msg.size() - payloadStart;
     qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
@@ -757,14 +703,14 @@ QByteArray Protocol::buildUserColor(int16_t color) {
 QByteArray Protocol::buildUserFace(int16_t face) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERFACE));
+    appendU32(msg, static_cast<uint32_t>(MessageType::USERFACE));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianI16(msg, face);
+    appendI16(msg, face);
     
     uint32_t payloadLen = msg.size() - payloadStart;
     qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
@@ -776,19 +722,19 @@ QByteArray Protocol::buildUserFace(int16_t face) {
 QByteArray Protocol::buildUserProp(const QList<PropSpec>& props) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERPROP));
+    appendU32(msg, static_cast<uint32_t>(MessageType::USERPROP));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianI16(msg, static_cast<int16_t>(props.size()));
+    appendI16(msg, static_cast<int16_t>(props.size()));
     
     // Write each prop (AssetSpec = 8 bytes: id + crc)
     for (const PropSpec& prop : props) {
-        writeBigEndianU32(msg, prop.spec.id);
-        writeBigEndianU32(msg, prop.spec.crc);
+        appendU32(msg, prop.spec.id);
+        appendU32(msg, prop.spec.crc);
     }
     
     uint32_t payloadLen = msg.size() - payloadStart;
@@ -801,14 +747,14 @@ QByteArray Protocol::buildUserProp(const QList<PropSpec>& props) {
 QByteArray Protocol::buildWhisper(uint32_t targetUserId, const QString& text) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::WHISPER));
+    appendU32(msg, static_cast<uint32_t>(MessageType::WHISPER));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianU32(msg, targetUserId);
+    appendU32(msg, targetUserId);
     writePascalString(msg, text);
     
     uint32_t payloadLen = msg.size() - payloadStart;
@@ -821,11 +767,11 @@ QByteArray Protocol::buildWhisper(uint32_t targetUserId, const QString& text) {
 QByteArray Protocol::buildGlobalMsg(const QString& text) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::GMSG));
+    appendU32(msg, static_cast<uint32_t>(MessageType::GMSG));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
     writePascalString(msg, text);
@@ -840,15 +786,15 @@ QByteArray Protocol::buildGlobalMsg(const QString& text) {
 QByteArray Protocol::buildSpotState(uint16_t spotId, int16_t state) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::SPOTSTATE));
+    appendU32(msg, static_cast<uint32_t>(MessageType::SPOTSTATE));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianU16(msg, spotId);
-    writeBigEndianI16(msg, state);
+    appendU16(msg, spotId);
+    appendI16(msg, state);
     
     uint32_t payloadLen = msg.size() - payloadStart;
     qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
@@ -860,14 +806,14 @@ QByteArray Protocol::buildSpotState(uint16_t spotId, int16_t state) {
 QByteArray Protocol::buildDoorLock(uint16_t spotId) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::DOORLOCK));
+    appendU32(msg, static_cast<uint32_t>(MessageType::DOORLOCK));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianU16(msg, spotId);
+    appendU16(msg, spotId);
     
     uint32_t payloadLen = msg.size() - payloadStart;
     qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
@@ -879,14 +825,14 @@ QByteArray Protocol::buildDoorLock(uint16_t spotId) {
 QByteArray Protocol::buildDoorUnlock(uint16_t spotId) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::DOORUNLOCK));
+    appendU32(msg, static_cast<uint32_t>(MessageType::DOORUNLOCK));
     
     int lengthPos = msg.size();
-    writeBigEndianU32(msg, 0);
-    writeBigEndianU32(msg, 0); // refNum
+    appendU32(msg, 0);
+    appendU32(msg, 0); // refNum
     
     int payloadStart = msg.size();
-    writeBigEndianU16(msg, spotId);
+    appendU16(msg, spotId);
     
     uint32_t payloadLen = msg.size() - payloadStart;
     qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));

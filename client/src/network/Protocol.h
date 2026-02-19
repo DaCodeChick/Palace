@@ -3,6 +3,7 @@
 #include <QByteArray>
 #include <QString>
 #include <QList>
+#include <QtEndian>
 #include <cstdint>
 
 namespace Palace {
@@ -376,22 +377,9 @@ public:
     static QByteArray buildDoorUnlock(uint16_t spotId);
     
 private:
-    // Helper functions for byte order conversion
-    static uint32_t readBigEndianU32(const QByteArray& data, int offset);
-    static uint16_t readBigEndianU16(const QByteArray& data, int offset);
-    static int32_t readBigEndianI32(const QByteArray& data, int offset);
-    static int16_t readBigEndianI16(const QByteArray& data, int offset);
-    
-    static void writeBigEndianU32(QByteArray& data, uint32_t value);
-    static void writeBigEndianU16(QByteArray& data, uint16_t value);
-    static void writeBigEndianI32(QByteArray& data, int32_t value);
-    static void writeBigEndianI16(QByteArray& data, int16_t value);
-    
-    // Helper to read Pascal strings (1-byte length prefix + string)
+    // String helpers
     static QString readPascalString(const QByteArray& data, int& offset);
     static void writePascalString(QByteArray& data, const QString& str);
-    
-    // Helper to read C strings (null-terminated)
     static QString readCString(const QByteArray& data, int offset, int maxLen = 255);
     
     // Helper to parse hotspot from room description varBuf
@@ -399,6 +387,31 @@ private:
     
     // Helper to build message with header
     static QByteArray buildMessage(MessageType type, const QByteArray& payload, uint32_t refNum = 0);
+    
+    // Inline endian helpers that directly use Qt functions
+    static inline void appendU32(QByteArray& data, uint32_t value) {
+        uchar buf[4];
+        qToBigEndian(value, buf);
+        data.append(reinterpret_cast<const char*>(buf), 4);
+    }
+    
+    static inline void appendU16(QByteArray& data, uint16_t value) {
+        uchar buf[2];
+        qToBigEndian(value, buf);
+        data.append(reinterpret_cast<const char*>(buf), 2);
+    }
+    
+    static inline void appendI32(QByteArray& data, int32_t value) {
+        uchar buf[4];
+        qToBigEndian(value, buf);
+        data.append(reinterpret_cast<const char*>(buf), 4);
+    }
+    
+    static inline void appendI16(QByteArray& data, int16_t value) {
+        uchar buf[2];
+        qToBigEndian(value, buf);
+        data.append(reinterpret_cast<const char*>(buf), 2);
+    }
 };
 
 } // namespace Network
