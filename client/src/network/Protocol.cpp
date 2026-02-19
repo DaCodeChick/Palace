@@ -273,6 +273,284 @@ ChatMessage Protocol::parseXTalk(const QByteArray& payload) {
     return msg;
 }
 
+// === New Protocol Methods ===
+
+uint32_t Protocol::parseVersion(const QByteArray& payload) {
+    if (payload.size() < 4) {
+        qWarning() << "Protocol::parseVersion: Payload too short";
+        return 0;
+    }
+    
+    uint32_t version = readBigEndianU32(payload, 0);
+    qDebug() << "Protocol::parseVersion: Server version =" << QString::number(version, 16);
+    return version;
+}
+
+QString Protocol::parseServerDown(const QByteArray& payload) {
+    // Server sends a reason string for shutdown
+    QString reason;
+    
+    if (payload.size() > 0) {
+        int offset = 0;
+        reason = readPascalString(payload, offset);
+    } else {
+        reason = "Server shutting down";
+    }
+    
+    qDebug() << "Protocol::parseServerDown:" << reason;
+    return reason;
+}
+
+QString Protocol::parseNavError(const QByteArray& payload) {
+    // Navigation error message
+    QString errorMsg;
+    
+    if (payload.size() > 0) {
+        int offset = 0;
+        errorMsg = readPascalString(payload, offset);
+    } else {
+        errorMsg = "Navigation error";
+    }
+    
+    qWarning() << "Protocol::parseNavError:" << errorMsg;
+    return errorMsg;
+}
+
+bool Protocol::parseRoomDescEnd(const QByteArray& payload) {
+    // ROOMDESCEND marks end of room transmission sequence
+    // Typically has no payload
+    qDebug() << "Protocol::parseRoomDescEnd: Room description complete";
+    return true;
+}
+
+bool Protocol::parseUserMove(const QByteArray& payload, uint32_t& userId, Point& pos) {
+    if (payload.size() < 8) {
+        qWarning() << "Protocol::parseUserMove: Payload too short";
+        return false;
+    }
+    
+    int offset = 0;
+    userId = readBigEndianU32(payload, offset); offset += 4;
+    pos.h = readBigEndianI16(payload, offset); offset += 2;
+    pos.v = readBigEndianI16(payload, offset); offset += 2;
+    
+    qDebug() << "Protocol::parseUserMove: User" << userId << "moved to (" << pos.h << "," << pos.v << ")";
+    return true;
+}
+
+bool Protocol::parseUserName(const QByteArray& payload, uint32_t& userId, QString& name) {
+    if (payload.size() < 5) { // Min: 4 bytes userId + 1 byte string length
+        qWarning() << "Protocol::parseUserName: Payload too short";
+        return false;
+    }
+    
+    int offset = 0;
+    userId = readBigEndianU32(payload, offset); offset += 4;
+    name = readPascalString(payload, offset);
+    
+    qDebug() << "Protocol::parseUserName: User" << userId << "changed name to" << name;
+    return true;
+}
+
+bool Protocol::parseUserColor(const QByteArray& payload, uint32_t& userId, int16_t& color) {
+    if (payload.size() < 6) {
+        qWarning() << "Protocol::parseUserColor: Payload too short";
+        return false;
+    }
+    
+    int offset = 0;
+    userId = readBigEndianU32(payload, offset); offset += 4;
+    color = readBigEndianI16(payload, offset); offset += 2;
+    
+    qDebug() << "Protocol::parseUserColor: User" << userId << "changed color to" << color;
+    return true;
+}
+
+bool Protocol::parseUserFace(const QByteArray& payload, uint32_t& userId, int16_t& face) {
+    if (payload.size() < 6) {
+        qWarning() << "Protocol::parseUserFace: Payload too short";
+        return false;
+    }
+    
+    int offset = 0;
+    userId = readBigEndianU32(payload, offset); offset += 4;
+    face = readBigEndianI16(payload, offset); offset += 2;
+    
+    qDebug() << "Protocol::parseUserFace: User" << userId << "changed face to" << face;
+    return true;
+}
+
+bool Protocol::parseUserProp(const QByteArray& payload, uint32_t& userId, QList<PropSpec>& props) {
+    if (payload.size() < 4) {
+        qWarning() << "Protocol::parseUserProp: Payload too short";
+        return false;
+    }
+    
+    int offset = 0;
+    userId = readBigEndianU32(payload, offset); offset += 4;
+    
+    // Read prop count if present
+    if (offset + 2 <= payload.size()) {
+        int16_t nbrProps = readBigEndianI16(payload, offset); offset += 2;
+        
+        // Read each prop (AssetSpec = 8 bytes: id + crc)
+        for (int i = 0; i < nbrProps && offset + 8 <= payload.size(); ++i) {
+            PropSpec prop;
+            prop.spec.id = readBigEndianU32(payload, offset); offset += 4;
+            prop.spec.crc = readBigEndianU32(payload, offset); offset += 4;
+            props.append(prop);
+        }
+    }
+    
+    qDebug() << "Protocol::parseUserProp: User" << userId << "has" << props.size() << "props";
+    return true;
+}
+
+bool Protocol::parseUserStatus(const QByteArray& payload, uint32_t& userId, uint16_t& flags) {
+    if (payload.size() < 6) {
+        qWarning() << "Protocol::parseUserStatus: Payload too short";
+        return false;
+    }
+    
+    int offset = 0;
+    userId = readBigEndianU32(payload, offset); offset += 4;
+    flags = readBigEndianU16(payload, offset); offset += 2;
+    
+    qDebug() << "Protocol::parseUserStatus: User" << userId << "flags =" << QString::number(flags, 16);
+    return true;
+}
+
+ChatMessage Protocol::parseWhisper(const QByteArray& payload) {
+    ChatMessage msg;
+    msg.isWhisper = true;
+    
+    if (payload.size() < 4) {
+        qWarning() << "Protocol::parseWhisper: Payload too short";
+        return msg;
+    }
+    
+    int offset = 0;
+    uint32_t userId = readBigEndianU32(payload, offset); offset += 4;
+    msg.text = readPascalString(payload, offset);
+    
+    qDebug() << "Protocol::parseWhisper: Whisper from user" << userId << ":" << msg.text;
+    return msg;
+}
+
+ChatMessage Protocol::parseXWhisper(const QByteArray& payload) {
+    // Full implementation needs RC4 decryption
+    ChatMessage msg = parseWhisper(payload);
+    qDebug() << "Protocol::parseXWhisper: (encrypted whisper - MVP treats as plain)";
+    return msg;
+}
+
+QString Protocol::parseGlobalMsg(const QByteArray& payload) {
+    QString msg;
+    
+    if (payload.size() > 0) {
+        int offset = 0;
+        msg = readPascalString(payload, offset);
+    }
+    
+    qDebug() << "Protocol::parseGlobalMsg:" << msg;
+    return msg;
+}
+
+QString Protocol::parseRoomMsg(const QByteArray& payload) {
+    QString msg;
+    
+    if (payload.size() > 0) {
+        int offset = 0;
+        msg = readPascalString(payload, offset);
+    }
+    
+    qDebug() << "Protocol::parseRoomMsg:" << msg;
+    return msg;
+}
+
+bool Protocol::parsePropNew(const QByteArray& payload) {
+    // Full implementation would parse prop creation
+    qDebug() << "Protocol::parsePropNew: Prop created (not fully implemented)";
+    return true;
+}
+
+bool Protocol::parsePropDel(const QByteArray& payload) {
+    // Full implementation would parse prop deletion
+    qDebug() << "Protocol::parsePropDel: Prop deleted (not fully implemented)";
+    return true;
+}
+
+bool Protocol::parsePropMove(const QByteArray& payload) {
+    // Full implementation would parse prop movement
+    qDebug() << "Protocol::parsePropMove: Prop moved (not fully implemented)";
+    return true;
+}
+
+Hotspot Protocol::parseSpotNew(const QByteArray& payload) {
+    Hotspot spot;
+    // Full implementation would parse complete hotspot structure
+    qDebug() << "Protocol::parseSpotNew: Hotspot created (not fully implemented)";
+    return spot;
+}
+
+uint16_t Protocol::parseSpotDel(const QByteArray& payload) {
+    if (payload.size() < 2) {
+        qWarning() << "Protocol::parseSpotDel: Payload too short";
+        return 0;
+    }
+    
+    uint16_t spotId = readBigEndianU16(payload, 0);
+    qDebug() << "Protocol::parseSpotDel: Hotspot" << spotId << "deleted";
+    return spotId;
+}
+
+bool Protocol::parseSpotMove(const QByteArray& payload) {
+    // Full implementation would parse hotspot movement
+    qDebug() << "Protocol::parseSpotMove: Hotspot moved (not fully implemented)";
+    return true;
+}
+
+bool Protocol::parseSpotState(const QByteArray& payload, uint16_t& spotId, int16_t& state) {
+    if (payload.size() < 4) {
+        qWarning() << "Protocol::parseSpotState: Payload too short";
+        return false;
+    }
+    
+    int offset = 0;
+    spotId = readBigEndianU16(payload, offset); offset += 2;
+    state = readBigEndianI16(payload, offset); offset += 2;
+    
+    qDebug() << "Protocol::parseSpotState: Hotspot" << spotId << "state =" << state;
+    return true;
+}
+
+QString Protocol::parseDisplayUrl(const QByteArray& payload) {
+    QString url;
+    
+    if (payload.size() > 0) {
+        int offset = 0;
+        url = readPascalString(payload, offset);
+    }
+    
+    qDebug() << "Protocol::parseDisplayUrl:" << url;
+    return url;
+}
+
+bool Protocol::parseFileNotFound(const QByteArray& payload) {
+    qDebug() << "Protocol::parseFileNotFound: Requested file not found on server";
+    return true;
+}
+
+bool Protocol::parsePing(const QByteArray& payload) {
+    qDebug() << "Protocol::parsePing: Received ping";
+    return true;
+}
+
+bool Protocol::parsePong(const QByteArray& payload) {
+    qDebug() << "Protocol::parsePong: Received pong";
+    return true;
+}
+
 // === Message Building ===
 
 QByteArray Protocol::buildLogon(const QString& username, const QString& wizardPassword) {
@@ -377,6 +655,227 @@ QByteArray Protocol::buildPing() {
     writeBigEndianU32(msg, 0); // refNum
     
     qDebug() << "Protocol::buildPing: Built ping message";
+    return msg;
+}
+
+QByteArray Protocol::buildPong() {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::PONG));
+    writeBigEndianU32(msg, 0); // length (no payload)
+    writeBigEndianU32(msg, 0); // refNum
+    
+    qDebug() << "Protocol::buildPong: Built pong message";
+    return msg;
+}
+
+QByteArray Protocol::buildLogoff() {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::LOGOFF));
+    writeBigEndianU32(msg, 0); // length (no payload)
+    writeBigEndianU32(msg, 0); // refNum
+    
+    qDebug() << "Protocol::buildLogoff: Built logoff message";
+    return msg;
+}
+
+QByteArray Protocol::buildUserMove(const Point& pos) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERMOVE));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writeBigEndianI16(msg, pos.h);
+    writeBigEndianI16(msg, pos.v);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildUserMove: Moving to (" << pos.h << "," << pos.v << ")";
+    return msg;
+}
+
+QByteArray Protocol::buildUserName(const QString& name) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERNAME));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writePascalString(msg, name);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildUserName: Changing name to" << name;
+    return msg;
+}
+
+QByteArray Protocol::buildUserColor(int16_t color) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERCOLOR));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writeBigEndianI16(msg, color);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildUserColor: Changing color to" << color;
+    return msg;
+}
+
+QByteArray Protocol::buildUserFace(int16_t face) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERFACE));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writeBigEndianI16(msg, face);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildUserFace: Changing face to" << face;
+    return msg;
+}
+
+QByteArray Protocol::buildUserProp(const QList<PropSpec>& props) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::USERPROP));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writeBigEndianI16(msg, static_cast<int16_t>(props.size()));
+    
+    // Write each prop (AssetSpec = 8 bytes: id + crc)
+    for (const PropSpec& prop : props) {
+        writeBigEndianU32(msg, prop.spec.id);
+        writeBigEndianU32(msg, prop.spec.crc);
+    }
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildUserProp: Setting" << props.size() << "props";
+    return msg;
+}
+
+QByteArray Protocol::buildWhisper(uint32_t targetUserId, const QString& text) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::WHISPER));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writeBigEndianU32(msg, targetUserId);
+    writePascalString(msg, text);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildWhisper: Whispering to user" << targetUserId << ":" << text;
+    return msg;
+}
+
+QByteArray Protocol::buildGlobalMsg(const QString& text) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::GMSG));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writePascalString(msg, text);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildGlobalMsg: Global message:" << text;
+    return msg;
+}
+
+QByteArray Protocol::buildSpotState(uint16_t spotId, int16_t state) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::SPOTSTATE));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writeBigEndianU16(msg, spotId);
+    writeBigEndianI16(msg, state);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildSpotState: Setting hotspot" << spotId << "to state" << state;
+    return msg;
+}
+
+QByteArray Protocol::buildDoorLock(uint16_t spotId) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::DOORLOCK));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writeBigEndianU16(msg, spotId);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildDoorLock: Locking door" << spotId;
+    return msg;
+}
+
+QByteArray Protocol::buildDoorUnlock(uint16_t spotId) {
+    QByteArray msg;
+    
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::DOORUNLOCK));
+    
+    int lengthPos = msg.size();
+    writeBigEndianU32(msg, 0);
+    writeBigEndianU32(msg, 0); // refNum
+    
+    int payloadStart = msg.size();
+    writeBigEndianU16(msg, spotId);
+    
+    uint32_t payloadLen = msg.size() - payloadStart;
+    qToBigEndian(payloadLen, reinterpret_cast<uchar*>(msg.data() + lengthPos));
+    
+    qDebug() << "Protocol::buildDoorUnlock: Unlocking door" << spotId;
     return msg;
 }
 
