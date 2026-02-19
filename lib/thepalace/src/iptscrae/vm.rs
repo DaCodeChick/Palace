@@ -30,6 +30,8 @@ pub enum VmError {
     Timeout,
     /// Instruction limit exceeded (for sandboxed scripts)
     InstructionLimitExceeded,
+    /// Security violation - function not allowed at current security level
+    SecurityViolation { function: String },
 }
 
 impl std::fmt::Display for VmError {
@@ -58,6 +60,9 @@ impl std::fmt::Display for VmError {
             }
             VmError::InstructionLimitExceeded => {
                 write!(f, "Instruction limit exceeded")
+            }
+            VmError::SecurityViolation { function } => {
+                write!(f, "Security violation: {} not allowed at this security level", function)
             }
         }
     }
@@ -834,39 +839,21 @@ impl Vm {
                 Ok(())
             }
             "GOTOROOM" => {
+                self.require_permission(context.as_deref(), "GOTOROOM")?;
                 let room_id = self.pop("GOTOROOM")?.to_integer();
-                if let Some(ctx) = context {
-                    if !ctx.is_function_allowed("GOTOROOM") {
-                        return Err(VmError::TypeError {
-                            message: "GOTOROOM not allowed at this security level".to_string(),
-                        });
-                    }
-                    ctx.actions.goto_room(room_id as i16);
-                }
+                self.with_context_action(context, |ctx| ctx.actions.goto_room(room_id as i16));
                 Ok(())
             }
             "LOCK" => {
+                self.require_permission(context.as_deref(), "LOCK")?;
                 let door_id = self.pop("LOCK")?.to_integer();
-                if let Some(ctx) = context {
-                    if !ctx.is_function_allowed("LOCK") {
-                        return Err(VmError::TypeError {
-                            message: "LOCK not allowed at this security level".to_string(),
-                        });
-                    }
-                    ctx.actions.lock_door(door_id);
-                }
+                self.with_context_action(context, |ctx| ctx.actions.lock_door(door_id));
                 Ok(())
             }
             "UNLOCK" => {
+                self.require_permission(context.as_deref(), "UNLOCK")?;
                 let door_id = self.pop("UNLOCK")?.to_integer();
-                if let Some(ctx) = context {
-                    if !ctx.is_function_allowed("UNLOCK") {
-                        return Err(VmError::TypeError {
-                            message: "UNLOCK not allowed at this security level".to_string(),
-                        });
-                    }
-                    ctx.actions.unlock_door(door_id);
-                }
+                self.with_context_action(context, |ctx| ctx.actions.unlock_door(door_id));
                 Ok(())
             }
             // Position/Movement functions
@@ -1705,6 +1692,21 @@ impl Vm {
             f(ctx);
         }
     }
+
+    /// Helper: Check if function is allowed at current security level
+    fn require_permission(
+        &self,
+        context: Option<&ScriptContext>,
+        function: &str,
+    ) -> Result<(), VmError> {
+        match context {
+            Some(ctx) if ctx.is_function_allowed(function) => Ok(()),
+            Some(_) => Err(VmError::SecurityViolation {
+                function: function.to_string(),
+            }),
+            None => Ok(()), // Allow in test mode without context
+        }
+    }
 }
 
 impl Default for Vm {
@@ -2091,7 +2093,7 @@ mod tests {
         let mut vm = Vm::new();
         let result = vm.execute_handler(&script, EventType::Select, &mut context);
 
-        assert!(matches!(result, Err(VmError::TypeError { .. })));
+        assert!(matches!(result, Err(VmError::SecurityViolation { .. })));
     }
 
     #[test]
