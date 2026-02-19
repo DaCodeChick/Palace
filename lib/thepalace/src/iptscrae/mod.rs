@@ -18,6 +18,7 @@
 //! - Server flag SF_AllowCyborgs (0x0200) enables globally
 
 pub mod ast;
+pub mod builtins;
 pub mod context;
 pub mod events;
 pub mod lexer;
