@@ -105,11 +105,16 @@ MessageType Protocol::identifyMessage(const QByteArray& data) {
     return static_cast<MessageType>(type);
 }
 
-bool Protocol::parseTiyid(const QByteArray& payload) {
-    // TIYID message is just a server identification marker
-    // No payload in basic implementation
-    qDebug() << "Protocol::parseTiyid: Received server handshake";
-    return true;
+uint32_t Protocol::parseTiyid(const QByteArray& payload) {
+    // TIYID message contains UserID assigned by server
+    if (payload.size() < 4) {
+        qWarning() << "Protocol::parseTiyid: Payload too short";
+        return 0;
+    }
+    
+    uint32_t userId = readBigEndianU32(payload, 0);
+    qDebug() << "Protocol::parseTiyid: Received UserID =" << userId;
+    return userId;
 }
 
 bool Protocol::parseServerInfo(const QByteArray& payload) {
@@ -120,7 +125,7 @@ bool Protocol::parseServerInfo(const QByteArray& payload) {
 }
 
 UserInfo Protocol::parseUserNew(const QByteArray& payload) {
-    UserInfo user;
+    UserInfo user = {};
     
     if (payload.size() < 12) {
         qWarning() << "Protocol::parseUserNew: Payload too short";
@@ -129,29 +134,30 @@ UserInfo Protocol::parseUserNew(const QByteArray& payload) {
     
     int offset = 0;
     user.userId = readBigEndianU32(payload, offset); offset += 4;
-    user.x = readBigEndianI16(payload, offset); offset += 2;
-    user.y = readBigEndianI16(payload, offset); offset += 2;
+    user.roomPos.h = readBigEndianI16(payload, offset); offset += 2;
+    user.roomPos.v = readBigEndianI16(payload, offset); offset += 2;
     user.roomId = readBigEndianI16(payload, offset); offset += 2;
-    user.faceColor = readBigEndianU16(payload, offset); offset += 2;
+    user.faceNbr = readBigEndianI16(payload, offset); offset += 2;
+    user.colorNbr = readBigEndianI16(payload, offset); offset += 2;
     
     // Name is Pascal string
     user.name = readPascalString(payload, offset);
     
     qDebug() << "Protocol::parseUserNew: User" << user.userId << user.name 
-             << "at (" << user.x << "," << user.y << ") in room" << user.roomId;
+             << "at (" << user.roomPos.h << "," << user.roomPos.v << ") in room" << user.roomId;
     
     return user;
 }
 
-bool Protocol::parseUserLeft(const QByteArray& payload, uint32_t& userId) {
+uint32_t Protocol::parseUserExit(const QByteArray& payload) {
     if (payload.size() < 4) {
-        qWarning() << "Protocol::parseUserLeft: Payload too short";
-        return false;
+        qWarning() << "Protocol::parseUserExit: Payload too short";
+        return 0;
     }
     
-    userId = readBigEndianU32(payload, 0);
-    qDebug() << "Protocol::parseUserLeft: User" << userId << "left";
-    return true;
+    uint32_t userId = readBigEndianU32(payload, 0);
+    qDebug() << "Protocol::parseUserExit: User" << userId << "left";
+    return userId;
 }
 
 QList<UserInfo> Protocol::parseUserList(const QByteArray& payload) {
@@ -168,15 +174,18 @@ QList<UserInfo> Protocol::parseUserList(const QByteArray& payload) {
     qDebug() << "Protocol::parseUserList: Parsing" << userCount << "users";
     
     for (uint32_t i = 0; i < userCount && offset < payload.size(); ++i) {
-        UserInfo user;
+        UserInfo user = {};
         
         if (offset + 12 > payload.size()) break;
         
         user.userId = readBigEndianU32(payload, offset); offset += 4;
-        user.x = readBigEndianI16(payload, offset); offset += 2;
-        user.y = readBigEndianI16(payload, offset); offset += 2;
+        user.roomPos.h = readBigEndianI16(payload, offset); offset += 2;
+        user.roomPos.v = readBigEndianI16(payload, offset); offset += 2;
         user.roomId = readBigEndianI16(payload, offset); offset += 2;
-        user.faceColor = readBigEndianU16(payload, offset); offset += 2;
+        user.faceNbr = readBigEndianI16(payload, offset); offset += 2;
+        user.colorNbr = readBigEndianI16(payload, offset); offset += 2;
+        
+        // Name is Pascal string
         user.name = readPascalString(payload, offset);
         
         users.append(user);
@@ -187,7 +196,7 @@ QList<UserInfo> Protocol::parseUserList(const QByteArray& payload) {
 }
 
 RoomInfo Protocol::parseRoomDesc(const QByteArray& payload) {
-    RoomInfo room;
+    RoomInfo room = {};
     
     if (payload.size() < 4) {
         qWarning() << "Protocol::parseRoomDesc: Payload too short";
@@ -195,16 +204,12 @@ RoomInfo Protocol::parseRoomDesc(const QByteArray& payload) {
     }
     
     int offset = 0;
+    room.roomFlags = readBigEndianU32(payload, offset); offset += 4;
+    room.facesID = readBigEndianU32(payload, offset); offset += 4;
     room.roomId = readBigEndianI16(payload, offset); offset += 2;
-    
-    // Skip flags and other fields for MVP
-    offset += 2; // flags
     
     // Room name is Pascal string
     room.name = readPascalString(payload, offset);
-    
-    // User count would be tracked separately in server state
-    room.userCount = 0;
     
     qDebug() << "Protocol::parseRoomDesc: Room" << room.roomId << room.name;
     return room;
@@ -224,7 +229,7 @@ QList<RoomInfo> Protocol::parseRoomList(const QByteArray& payload) {
     qDebug() << "Protocol::parseRoomList: Parsing" << roomCount << "rooms";
     
     for (uint32_t i = 0; i < roomCount && offset < payload.size(); ++i) {
-        RoomInfo room;
+        RoomInfo room = {};
         
         if (offset + 2 > payload.size()) break;
         
@@ -233,7 +238,7 @@ QList<RoomInfo> Protocol::parseRoomList(const QByteArray& payload) {
         
         // User count follows name
         if (offset + 2 <= payload.size()) {
-            room.userCount = readBigEndianU16(payload, offset); offset += 2;
+            room.nbrPeople = readBigEndianI16(payload, offset); offset += 2;
         }
         
         rooms.append(room);
@@ -305,7 +310,7 @@ QByteArray Protocol::buildLogon(const QString& username, const QString& wizardPa
 QByteArray Protocol::buildTalk(const QString& text) {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::TALK_CLIENT));
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::TALK));
     
     int lengthPos = msg.size();
     writeBigEndianU32(msg, 0);
@@ -327,7 +332,7 @@ QByteArray Protocol::buildXTalk(const QString& text) {
     QByteArray msg = buildTalk(text);
     
     // Change message type to XTALK
-    qToBigEndian(static_cast<uint32_t>(MessageType::XTALK_CLIENT), 
+    qToBigEndian(static_cast<uint32_t>(MessageType::XTALK), 
                  reinterpret_cast<uchar*>(msg.data()));
     
     qDebug() << "Protocol::buildXTalk: Built xtalk message (MVP: unencrypted)";
@@ -356,7 +361,7 @@ QByteArray Protocol::buildRoomGoto(int16_t roomId) {
 QByteArray Protocol::buildListRooms() {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::LISTROOMS));
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::LISTOFALLROOMS));
     writeBigEndianU32(msg, 0); // length (no payload)
     writeBigEndianU32(msg, 0); // refNum
     
@@ -367,7 +372,7 @@ QByteArray Protocol::buildListRooms() {
 QByteArray Protocol::buildPing() {
     QByteArray msg;
     
-    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::PING_CLIENT));
+    writeBigEndianU32(msg, static_cast<uint32_t>(MessageType::PING));
     writeBigEndianU32(msg, 0); // length (no payload)
     writeBigEndianU32(msg, 0); // refNum
     

@@ -203,13 +203,13 @@ void Session::handleMessage(const QByteArray& message)
         case MessageType::TIYID:
             handleTiyid(payload);
             break;
-        case MessageType::RPRS:
+        case MessageType::SERVERINFO:
             handleServerInfo(payload);
             break;
         case MessageType::USERNEW:
             handleUserNew(payload);
             break;
-        case MessageType::USERLEFT:
+        case MessageType::USEREXIT:
             handleUserLeft(payload);
             break;
         case MessageType::USERLIST:
@@ -218,7 +218,7 @@ void Session::handleMessage(const QByteArray& message)
         case MessageType::ROOMDESC:
             handleRoomDesc(payload);
             break;
-        case MessageType::RMLIST:
+        case MessageType::LISTOFALLROOMS:
             handleRoomList(payload);
             break;
         case MessageType::TALK:
@@ -270,8 +270,8 @@ void Session::handleUserNew(const QByteArray& payload)
 void Session::handleUserLeft(const QByteArray& payload)
 {
     qDebug() << "Session::handleUserLeft";
-    uint32_t userId;
-    if (Protocol::parseUserLeft(payload, userId)) {
+    uint32_t userId = Protocol::parseUserExit(payload);
+    if (userId != 0) {
         // Remove from current user list
         for (int i = 0; i < m_currentUsers.size(); ++i) {
             if (m_currentUsers[i].userId == userId) {
